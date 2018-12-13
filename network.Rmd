@@ -1,0 +1,350 @@
+---
+title: "network"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Initialisation de l'environnement
+```{r}
+rm(list=ls())
+```
+# Chargement des bibliothèques
+```{r, echo = false}
+# install.packages("tidytext")
+library("tidytext")
+# install.packages("tidyverse")
+library("tidyverse")
+# install.packages("igraph")
+library("igraph")
+# install.packages("reshape2")
+library("reshape2")
+# install.packages("wordcloud")
+library("wordcloud")
+# install.packages("ggraph")
+library("ggraph")
+# install.packages("widyr")
+library("widyr")
+```
+
+
+# Chargement des données
+```{r}
+data<- readLines("Frank Herbert - Dune.txt_clean")
+head(data)
+```
+
+#Phrase per line
+```{r}
+phrase <- c()
+
+#stock les phrases
+for (i in data){
+  phrase <- c(phrase, unlist(str_split(i, "\\. \"|\\.\"|[.][:space:]+(?=[:upper:])")))
+}
+
+phrase <- gsub("\\\"|[.]","",phrase)
+
+data_split <- data.frame(line = 1:length(phrase),text = phrase, stringsAsFactors = FALSE)
+
+head(data_split)
+
+```
+
+#Ajouter colonne "chapitre" pour chaque ligne
+```{r}
+#data_split[data_split$line == "= = = = = =",]
+data_split$chapitre <- cumsum(as.integer(data_split$text=="= = = = = ="))+1
+dim(data_split)
+head(data_split)
+```
+
+# Transformation du jeu de données pour faire apparaître le numéro des chapitres
+```{r}
+#le dataframe qui ne contient pas de ligne '= = = = = = "
+data_chapter <- data_split[-which(data_split$text=="= = = = = ="),]
+#nombre de ligne pour chaque ligne
+table(data_chapter$chapitre)
+```
+
+En observant la table de fréquence, chapitre 22 et 38 ne contient que 4 lignes.
+
+```{r}
+data_chapter[which(data_chapter$chapitre %in% c(22,38)),]
+```
+
+En fait, ce sont des lignes qui séparent les différentes grandes parties du livre. Dune contient 3 grandes parties : Book 1 , Book 2 et Book 3.
+
+##Ajouter les numéros de parties pour chaque ligne
+```{r}
+#récupérer les noms de chqpitres qui ne contiennent que 4 lignes
+sep_partie <- as.integer(names(which(table(data_chapter$chapitre)==4)))
+#ajouter la colonne "partie"
+data_chapter$partie <- cumsum(as.integer(data_chapter$chapitre %in% sep_partie))+1
+#ajuster la colonne "chapitre" car elle va être décalé en raison de la suppression des chapitres 22 et 38  
+data_chapter <- data_chapter[-which(data_chapter$chapitre %in% sep_partie),]
+# data_clean : 46 facteurs
+# data_brut : 51 facteurs
+data_chapter$chapitre = as.factor(data_chapter$chapitre)
+levels(data_chapter$chapitre) = as.factor(1:51)
+data_chapter$partie = as.factor(data_chapter$partie)
+levels(data_chapter$partie) = as.factor(1:3)
+
+message("Nombre de ligne par chapitre")
+table(data_chapter$chapitre)
+message("Nombre de ligne par partie")
+table(data_chapter$partie)
+
+head(data_chapter)
+```
+
+
+##Enlever les lignes "= = = = = =" et vide
+```{r}
+data_chapter <- data_chapter[-which(data_chapter$text %in% c("= = = = = =","")),]
+data_chapter <- data_chapter[-1,]
+data_chapter$line <- 1:nrow(data_chapter)
+head(data_chapter)
+```
+
+```{r}
+lappend <- function (lst, ...){
+  lst <- c(lst, list(...))
+  return(lst)
+}
+
+add_in_dict <- function(data_dict){
+  dict <- list()
+  name <- c()
+  
+  for (row in 1:nrow(data_dict)){
+    # print(row)
+    
+    synonym <- c()
+    for (i in data_dict[row,]){
+      
+      if (!is.na(i)) {
+        # print(i)  
+        synonym <- c(synonym,i)
+        
+      }
+    }
+    dict <- lappend(dict,synonym)
+    name <- c(name,synonym[1])
+  }
+  
+  names(dict) <- name
+  # print(length(dict))
+  # print(length(name))
+  # print(name)
+  return(dict)
+}
+
+add_in_dict2<- function(data_dict){
+  dict <- list()
+  name <- c()
+  
+  for (row in 1:nrow(data_dict)){
+    # print(row)
+    
+    synonym <- c()
+    for (i in data_dict[row,]){
+      
+      if (!is.na(i)) {
+        # print(i)  
+        synonym <- c(synonym,gsub(" ","_",i))
+        
+      }
+    }
+    dict <- lappend(dict,synonym)
+    name <- c(name,gsub("_"," ",synonym[1]))
+  }
+  
+  names(dict) <- name
+  # print(length(dict))
+  # print(length(name))
+  # print(name)
+  return(dict)
+}
+
+character.dict <- add_in_dict(dict_perso[,-1])
+character.dict
+
+character.dict.underscore <- add_in_dict2(dict_perso[,-1])
+```
+
+Concatene les phrases par chapitre
+```{r}
+df_content_chap <- aggregate(text ~ chapitre, data = data_chapter, paste,collapse='. ')
+```
+
+Look up corpus
+```{r}
+library(quanteda)
+toks <- tokens(tolower(df_content_chap$text),"word",remove_punct= TRUE) %>% tokens_compound(dictionary(character.dict))
+DTM <-as.matrix(dfm(toks, dictionary = dictionary(character.dict)))
+dim(DTM)
+```
+
+```{r}
+pers_chap <- as.data.frame(as.table(DTM),stringsAsFactors = FALSE)
+pers_chap$docs <- sapply(pers_chap$docs, function(x) gsub("text","",x))
+pers_chap <- pers_chap[order(pers_chap$docs),]
+pers_chap$docs <- as.integer(pers_chap$docs)
+pers_chap$Freq <- as.integer(pers_chap$Freq)
+row.names(pers_chap) <- NULL
+head(pers_chap)
+```
+
+Personnage par chapitre
+```{r}
+pers_chap_matrix <- t(DTM)
+pers_chap_matrix[pers_chap_matrix <= 4] <- 0
+pers_chap_matrix[pers_chap_matrix > 4] <- 1
+pers_chap_matrix
+```
+
+Hiérachie clustering
+```{r}
+norm <- pers_chap_matrix/ which(rowSums(pers_chap_matrix)>0)
+
+h <- hclust(dist(norm, method = "manhattan"))
+
+plot(h)
+```
+
+```{r}
+ordering <- h$labels[h$order]
+ordering
+```
+
+
+```{r}
+chapters <- pers_chap %>%
+    filter(Freq > 1) %>%        # scenes with > 1 character
+    ungroup() %>%
+    mutate(chap = as.numeric(factor(docs)),
+           character = factor(features, levels = ordering))
+
+ggplot(chapters, aes(chap, features)) +
+    geom_point() +
+    geom_path(aes(group = chap))
+```
+
+Coocurrence matrice
+```{r}
+# non_airport_scenes <- speaker_scene_matrix[, colSums(speaker_scene_matrix) < 10]
+
+cooccur <- pers_chap_matrix %*% t(pers_chap_matrix)
+
+heatmap(cooccur)
+```
+
+```{r}
+library(igraph)
+g <- graph.adjacency(cooccur, weighted = TRUE, mode = "undirected", diag = FALSE)
+plot(g, edge.width = E(g)$weight)
+```
+
+```{r}
+degree(g)
+```
+
+```{r}
+betweenness(g)
+```
+
+```{r}
+# install.packages("d3Network")
+library(d3Network)
+library(networkD3)
+sg <- simplify(g)
+df <- get.edgelist(g, names=TRUE)
+df
+df <- as.data.frame(df)
+colnames(df) <- c('source', 'target')
+df$value <- rep(1, nrow(df))
+df
+# get communities
+fc <- fastgreedy.community(g)
+com <- membership(fc)
+node.info <- data.frame(name=names(com), group=as.vector(com))
+links <- data.frame(source=match(df$source, node.info$name)-1,target=match(df$target, node.info$name)-1,value=df$value)
+df
+forceNetwork(Links = links, Nodes = node.info,Source = "source", Target = "target",Value = "value", NodeID = "name",Group = "group", opacity = 1, opacityNoHover=1,clickAction = TRUE)
+```
+
+```{r}
+install.packages("corpustools")
+library(corpustools)
+tc <- create_tcorpus(df_content_chap$text[1], doc_column = "id")
+tc$tokens
+hits <- tc$search_features('"paul jessica*"~10')
+kwic <- tc$kwic(hits, ntokens = 3)
+head(kwic )
+```
+##Position des tokens trouvés
+
+TRouver les positions des mots du  vocabulaire dans le corpus puis calculer leur scores 
+```{r}
+find_position <- function(source, target){
+  
+  tok <- tokens(tolower(df_content_chap$text[1]),"word",remove_punct= TRUE) %>%
+    tokens_compound(dictionary(character.dict[c(source,target)]))
+  
+  tok <- as.character(tok)
+  
+  return(list("s" = which(tok %in% character.dict.underscore[[source]]),
+              "t" = which(tok %in% character.dict.underscore[[target]])))
+}
+
+find_position("paul atreides","lady jessica")
+```
+
+Algo calculer score entre les personnage qui co ocurrent dans un chapitre
+```{r}
+# nb_chap <- as.integer(unique(df_content_chap$chapitre))
+
+scores <- function (source.ind, target.ind){
+  
+  wordList <- list()
+  upperBound <- length(source.ind)
+  
+  for (ind in source.ind){ #pour chaque index de source dans le corpus
+    indlow <- ind-20
+    indhigh <- ind+20
+    x <- 0
+    
+    for (index in target.ind){
+      x <- x + 1 
+      
+      if (indlow <= index & index <= indhigh){
+        wordList <- lappend(wordList,c(ind, index))
+      }
+    }
+    
+    wordUniqueList <- list()
+    
+    for (element in wordList){
+      wordUniqueList <- lappend(wordUniqueList, element[[1]])
+    }
+  }
+  
+  scoreToShow <- round(length(wordUniqueList)/upperBound, 4)
+  
+  return (scoreToShow)
+}
+
+scores(find_position("paul atreides","lady jessica")$s, 
+       find_position("paul atreides","lady jessica")$t)
+
+scores(find_position("paul atreides","duke leto atreides")$s, 
+       find_position("paul atreides","duke leto atreides")$t)
+
+scores(find_position("lady jessica","paul atreides")$s, 
+       find_position("lady jessica","paul atreides")$t)
+
+scores(find_position("duke leto atreides","paul atreides")$s, 
+       find_position("duke leto atreides","paul atreides")$t)
+```
+
