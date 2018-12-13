@@ -5,7 +5,7 @@ date: "30/11/2018"
 output: html_document
 ---
 
-```{r}
+```{r, echo = false}
 library(tidyverse)
 library(rvest)
 library(stringr) 
@@ -15,40 +15,40 @@ library(lubridate)
 ```
 
 ```{r}
-# url <-'https://en.wikipedia.org/wiki/Dune_(novel)#Characters'
-url <- "https://en.wikipedia.org/wiki/List_of_Dune_characters#Frank_Herbert_works"
+url <-'https://en.wikipedia.org/wiki/Dune_(novel)#Characters'
+# url <- "https://en.wikipedia.org/wiki/List_of_Dune_characters#Frank_Herbert_works"
 
 page <- read_html(url)
 ```
 
 ## Scraping à partir de Wiki Dune(Novel)
 ```{r}
-# group_data <- html_nodes(page,'dt') %>% html_text()
-# message("Nom des groupes de personnages:")
-# group_data
-# nom_perso <- html_nodes(page,'dl:nth-child(30) dt , dl:nth-child(26) dt , dl:nth-child(24) dt , h2+ dl dt , dl:nth-child(28) dt , li') %>% html_text()
-# nom_perso <- nom_perso[-c(1:31,65:length(nom_perso))]
-# message("Nom des personnages:")
-# nom_perso
-# nom_perso <- gsub("\\\"|[.]","",nom_perso)
-# nom_perso
+group_data <- html_nodes(page,'dt') %>% html_text()
+message("Nom des groupes de personnages:")
+group_data
+nom_perso <- html_nodes(page,'dl:nth-child(30) dt , dl:nth-child(26) dt , dl:nth-child(24) dt , h2+ dl dt , dl:nth-child(28) dt , li') %>% html_text()
+nom_perso <- nom_perso[-c(1:31,65:length(nom_perso))]
+message("Nom des personnages:")
+nom_perso
+nom_perso <- gsub("\\\"|[.]","",nom_perso)
+nom_perso
 ```
 
 ## Scraping à partir de Wiki Liste de personnage
 ```{r}
-group_data <- html_nodes(page,"#Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #House_Harkonnen , #House_Atreides") %>% html_text()
-message("Nom des groupes de personnages:")
-group_data
-
-nom_perso <- html_nodes(page,'.mw-headline , #Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #Imperial_House_Corrino , #House_Harkonnen ,#House_Atreides , li') %>% html_text()
-nom_perso <- nom_perso[-c(1:which(nom_perso == "Frank Herbert works"),
-                          which(nom_perso == "Brian Herbert and Kevin J. Anderson works"):length(nom_perso))]
-
-nom_perso %>% str_replace_all(c("[.]" = "", ";" = ","))
-
-message("Nom des personnages:")
-
-nom_perso
+# group_data <- html_nodes(page,"#Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #House_Harkonnen , #House_Atreides") %>% html_text()
+# message("Nom des groupes de personnages:")
+# group_data
+# 
+# nom_perso <- html_nodes(page,'.mw-headline , #Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #Imperial_House_Corrino , #House_Harkonnen ,#House_Atreides , li') %>% html_text()
+# nom_perso <- nom_perso[-c(1:which(nom_perso == "Frank Herbert works"),
+#                           which(nom_perso == "Brian Herbert and Kevin J. Anderson works"):length(nom_perso))]
+# 
+# nom_perso %>% str_replace_all(c("[.]" = "", ";" = ","))
+# 
+# message("Nom des personnages:")
+# 
+# nom_perso
 
 ```
 
@@ -68,6 +68,32 @@ data_nom
 personnage <- data_nom %>%
   separate(nom, "nom",",", extra = "drop" )
 
+personnage$nom <- gsub("[[:punct:]]"," ",tolower(personnage$nom))
 personnage
 ```
+
+```{r}
+dict_perso <- cbind(personnage, nom_dup = personnage$nom) %>%
+  separate(nom_dup,c("nom1","nom2","nom3","nom4","nom5"), " ",extra = "drop")
+
+dict_perso
+```
+
+```{r}
+dict_perso[dict_perso == "atreides" | 
+             dict_perso  == "harkonnen" |
+             dict_perso  == "tuek" |
+             dict_perso  == "fenring" |
+             dict_perso == "the" | 
+             dict_perso == "de" |
+             dict_perso == "princess"|
+             dict_perso == "lady"]<- NA
+
+dict_perso$nom1[which(dict_perso$nom2== "margot")] <- "lady fenring"
+
+
+dict_perso
+```
+
+
 
