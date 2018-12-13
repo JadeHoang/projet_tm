@@ -199,14 +199,14 @@ head(pers_chap)
 Personnage par chapitre
 ```{r}
 pers_chap_matrix <- t(DTM)
-pers_chap_matrix[pers_chap_matrix <= 4] <- 0
-pers_chap_matrix[pers_chap_matrix > 4] <- 1
+# pers_chap_matrix[pers_chap_matrix <= 4] <- 0
+pers_chap_matrix[pers_chap_matrix > 0] <- 1
 pers_chap_matrix
 ```
 
 Hiérachie clustering
 ```{r}
-norm <- pers_chap_matrix/ which(rowSums(pers_chap_matrix)>0)
+norm <- pers_chap_matrix/ rowSums(pers_chap_matrix)
 
 h <- hclust(dist(norm, method = "manhattan"))
 
@@ -274,6 +274,7 @@ df
 forceNetwork(Links = links, Nodes = node.info,Source = "source", Target = "target",Value = "value", NodeID = "name",Group = "group", opacity = 1, opacityNoHover=1,clickAction = TRUE)
 ```
 
+##corpustools
 ```{r}
 install.packages("corpustools")
 library(corpustools)
@@ -287,9 +288,9 @@ head(kwic )
 
 TRouver les positions des mots du  vocabulaire dans le corpus puis calculer leur scores 
 ```{r}
-find_position <- function(source, target){
+find_position <- function(chap.ind, source, target){
   
-  tok <- tokens(tolower(df_content_chap$text[1]),"word",remove_punct= TRUE) %>%
+  tok <- tokens(tolower(df_content_chap$text[chap.ind]),"word",remove_punct= TRUE) %>%
     tokens_compound(dictionary(character.dict[c(source,target)]))
   
   tok <- as.character(tok)
@@ -298,7 +299,7 @@ find_position <- function(source, target){
               "t" = which(tok %in% character.dict.underscore[[target]])))
 }
 
-find_position("paul atreides","lady jessica")
+find_position(1,"paul atreides","lady jessica")
 ```
 
 Algo calculer score entre les personnage qui co ocurrent dans un chapitre
@@ -311,8 +312,8 @@ scores <- function (source.ind, target.ind){
   upperBound <- length(source.ind)
   
   for (ind in source.ind){ #pour chaque index de source dans le corpus
-    indlow <- ind-20
-    indhigh <- ind+20
+    indlow <- ind-15
+    indhigh <- ind+15
     x <- 0
     
     for (index in target.ind){
@@ -334,17 +335,86 @@ scores <- function (source.ind, target.ind){
   
   return (scoreToShow)
 }
+scores(find_position(1,"paul atreides","paul atreides")$s, 
+       find_position(1,"paul atreides","paul atreides")$t)
 
-scores(find_position("paul atreides","lady jessica")$s, 
-       find_position("paul atreides","lady jessica")$t)
+scores(find_position(1,"paul atreides","lady jessica")$s, 
+       find_position(1,"paul atreides","lady jessica")$t)
 
-scores(find_position("paul atreides","duke leto atreides")$s, 
-       find_position("paul atreides","duke leto atreides")$t)
+scores(find_position(1,"paul atreides","duke leto atreides")$s, 
+       find_position(1,"paul atreides","duke leto atreides")$t)
 
-scores(find_position("lady jessica","paul atreides")$s, 
-       find_position("lady jessica","paul atreides")$t)
+scores(find_position(1,"lady jessica","paul atreides")$s, 
+       find_position(1,"lady jessica","paul atreides")$t)
 
-scores(find_position("duke leto atreides","paul atreides")$s, 
-       find_position("duke leto atreides","paul atreides")$t)
+scores(find_position(1,"duke leto atreides","paul atreides")$s, 
+       find_position(1,"duke leto atreides","paul atreides")$t)
+```
+
+Trouver les combinaisons de source et target
+```{r}
+
+#les chapters ont des relations
+mult <- pers_chap_matrix[, colSums(pers_chap_matrix) > 1]
+# mult <- speaker_scene_matrix[, colSums(speaker_scene_matrix) > 1]
+
+# pre-generate cooccurrence data
+cooccurences <- lapply(seq_len(ncol(mult)), function(i) {
+  # use as.matrix to handle case where i == 1
+  # mat <- as.matrix(mult[, seq_len(2)]) #column of chap 1:i
+  mat <- as.matrix(mult[, i])
+  mat <- as.matrix(mat[rowSums(mat) > 0, ]) #character with value 1
+  co <- mat %*% t(mat) %>% 
+    melt(varnames = c("Source", "Target"),value.name ="poids") %>% 
+      filter(Source != Target)#garder que des source et target different 
+  co <-  data.frame(lapply(co, as.character), stringsAsFactors=FALSE)
+})
+
+length(cooccurences)
+
+#1ere chapitre
+cooccurences[[1]]
+
+#relation par chapitre
+poids.perso <- lapply(seq_len(length(cooccurences)), function(i) {
+    cooccurences[[i]] %>%
+    rowwise() %>%
+      mutate(poids = scores(find_position(i,Source,Target)$s, 
+                          find_position(i,Source,Target)$t)) %>%
+        filter(poids > 0)
+})
+
+
+
+```
+
+Pour les graphes complexes
+```{r}
+poids.perso.group <- lapply(seq_len(length(poids.perso)), function(i) {
+    as.data.frame(poids.perso[[i]],stringAsFactor  = FALSE) %>%
+      left_join(personnage[,!(names(personnage) == "group")], by = c("Source" = "nom")) %>%
+        select(-Source) %>%
+        rename(Source = id) %>%
+      left_join(personnage[,!(names(personnage) == "group")], by = c("Target" = "nom")) %>%
+        select(-Target) %>%
+        rename(Target = id)
+})
+```
+
+Exemple pour Chapitre 1
+```{r}
+forceNetwork(Links = poids.perso.group[[1]],
+                 Nodes = personnage, 
+                 Source = "Source",
+                 Target = "Target",
+                 NodeID ="nom",
+                 Group = "group",
+                 Value = "poids",
+                 opacity = 1,
+                 opacityNoHover = 2,
+                 linkWidth = networkD3::JS("function(d) { return d.value*2; }"),
+                 zoom = TRUE,
+                 fontSize = 8,
+                 legend = TRUE)
 ```
 
