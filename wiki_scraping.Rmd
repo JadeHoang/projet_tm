@@ -69,6 +69,8 @@ personnage <- data_nom %>%
   separate(nom, "nom",",", extra = "drop" )
 
 personnage$nom <- gsub("[[:punct:]]"," ",tolower(personnage$nom))
+personnage <- as.data.frame(personnage, stringAsFactors = FALSE)
+personnage$id <- 0:(nrow(personnage) - 1)
 personnage
 ```
 
@@ -87,10 +89,10 @@ dict_perso[dict_perso == "atreides" |
              dict_perso == "the" | 
              dict_perso == "de" |
              dict_perso == "princess"|
-             dict_perso == "lady"]<- NA
+             dict_perso == "lady" |
+             dict_perso == "fremen"]<- NA
 
 dict_perso$nom1[which(dict_perso$nom2== "margot")] <- "lady fenring"
-
 
 dict_perso
 ```
