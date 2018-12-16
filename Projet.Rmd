@@ -106,7 +106,7 @@ data_part
 data_part %>%
   group_by(partie) %>% 
   mutate(word_count = 1:n(),
-         index = word_count %/% 500 + 1) %>%
+         index = round(word_count / n(),2)) %>%
   inner_join(get_sentiments("bing")) %>%
   count(partie, index = index , sentiment) %>%
   ungroup() %>%

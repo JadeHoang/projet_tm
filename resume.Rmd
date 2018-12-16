@@ -3,12 +3,13 @@ title: "vectorielles des mots"
 output: html_notebook
 ---
 
-```{r}
+```{r,echo = F}
 library(text2vec)
 library(Matrix)
 library(sparsesvd)
 library(tictoc)
 library(MASS)
+# install.packages("tm")
 library(tm)
 library(NLP)
 library(stringr)
@@ -236,6 +237,7 @@ compute_point<-function(data,freq){
 ranking<-compute_point(data_chapter$text_pre,freq)
 data_chapter$ranking<-ranking
 
+library(ggplot2)
 ggplot(data_chapter, aes(x = ranking, fill = partie)) +
   geom_density(alpha = 0.3)
 
