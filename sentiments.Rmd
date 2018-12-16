@@ -1,0 +1,102 @@
+---
+title: "sentiments"
+author: "jade"
+date: "14/12/2018"
+output: html_document
+---
+
+Charger les packages
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidytext)
+```
+
+
+Dataframe avec les tokens sentences
+```{r}
+load("data_chapter.RData")
+head(data_chapter)
+```
+
+```{r}
+dune_sentiment.s <- data_chapter %>% 
+    select(-c(line,chapitre)) %>%
+ group_by(partie) %>%
+ mutate(sentence_num = 1:n(),
+ index = round(sentence_num / n(), 2)) %>%
+ unnest_tokens(word, text) %>%
+ # anti_join(stop_words)%>%
+ inner_join(get_sentiments("afinn")) %>%
+ group_by(partie, index) %>%
+ summarise(sentiment = sum(score, na.rm = TRUE)) %>%
+ arrange(sentiment)
+
+head(dune_sentiment.s,10)
+
+```
+
+```{r}
+ggplot(dune_sentiment.s,
+        aes(index,
+            sentiment, fill = partie)) +
+  geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ partie, ncol = 2, scales = "free_x")
+```
+
+
+
+```{r}
+dune_sentiment <- data_chapter %>% 
+    select(-c(line,partie)) %>%
+ group_by(chapitre) %>%
+ mutate(sentence_num = 1:n(),
+ index = round(sentence_num / n(), 2)) %>%
+ unnest_tokens(word, text) %>%
+ # anti_join(stop_words)%>%
+ inner_join(get_sentiments("afinn")) %>%
+ group_by(chapitre, index) %>%
+ summarise(sentiment = sum(score, na.rm = TRUE)) %>%
+ arrange(sentiment)
+
+head(dune_sentiment,20 )
+# max(dune_sentiment$sentiment)
+```
+
+#Heat map
+```{r}
+
+# #create a new variable from index
+# dune_sentiment$sentFactor <- cut(dune_sentiment$sentiment,
+#   breaks = c(-20,-16,-12,-8,-4,-1,1,4,8,max(dune_sentiment$sentiment,na.rm=T)),
+#   labels=c("-20 à -16","-16 à -12","-12 à -8",
+#            "-8 à -4","-4 à -1","0","1 à 4","4 à 8",
+#            "8 à 12"))
+# 
+# #change level order
+# dune_sentiment$sentFactor <- factor(as.character(dune_sentiment$sentFactor),
+# levels=rev(levels(dune_sentiment$sentFactor)))
+
+
+ggplot(dune_sentiment,
+       aes(index,
+           factor(chapitre,
+                  levels = sort(unique(chapitre),decreasing = TRUE)),
+                  fill = sentiment)) +
+ geom_tile(color = "white",size=0.25) +
+  labs(x = "Progression du chapitre", y = "Chapitre") +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_x_continuous(labels = scales::percent, expand = c(0, 0)) +
+#  scale_fill_manual(values=c("#a32332","#b82838","#b82838",
+# "#fee08b","#e37d88","#ffffff","#7d88e3","#6875de","#5362da"))+
+  geom_hline(aes(yintercept = 25.5))+ #chap 20
+  geom_hline(aes(yintercept = 10.5))+ #chap 34
+  scale_fill_gradient2()+
+  ggtitle("Sentiment du livre DUNE",
+ subtitle = "Résumé du sentiment pour chaque chapitre") +
+ theme_minimal() +
+ theme(panel.grid.major = element_blank(),
+ panel.grid.minor = element_blank(),
+ legend.position = "top")
+```
+

@@ -1,0 +1,292 @@
+---
+title: "resums"
+author: "jade"
+date: "14/12/2018"
+output: html_document
+---
+
+#charger les packages
+```{r}
+library(dplyr)
+library(tidytext)
+library(wordcloud)
+library(reshape2)
+library(stringr)
+library(ggplot2)
+library(igraph)
+library(ggraph)
+library(widyr)
+```
+
+
+#Wordcloud
+```{r}
+load("data_chapter.RData")
+
+data_chapter %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>%
+  count(word, sort=T) %>%
+  with(wordcloud(word, n, max.words = 100,colors = brewer.pal(8, "Dark2"),
+                 random.order=FALSE))
+```
+
+#Wordcloud Negative et Positive
+```{r}
+data_chapter %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("red", "blue"),
+                   max.words = 200, scale=c(3,.20))
+
+```
+
+#Importance des chapitres
+```{r}
+# install.packages("textrank")
+library(textrank)
+
+dune_chapters <- data_chapter %>%
+  group_by(chapitre) %>%
+  summarise(text = paste(text, collapse = '. '))
+
+dune_chapters$chapitre <- as.numeric(dune_chapters$chapitre)
+
+dune_word <- dune_chapters %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word")
+
+dune_summary <- textrank_sentences(data= dune_chapters, terminology = dune_word)
+
+dune_summary[["sentences"]] %>%
+  ggplot(aes(textrank_id , textrank)) +
+  geom_col() +
+  theme_minimal() +
+  labs(x = "Chapitre",
+       y = "TextRank score",
+       title = "Importance des chapitres dans DUNE") +
+  scale_x_continuous(breaks = seq(from=1,to=50,by=5))
+```
+
+
+#TextRank algorithme
+
+```{r}
+#enlever les ponctuations, chiffres et charactères spéciaux
+clean_sentences <- str_replace_all(string = data_chapter$text, pattern = "[^a-zA-Z]", replacement = " ")
+
+#lowercase
+clean_sentences <- tolower(clean_sentences)
+head(clean_sentences, 10)
+```
+
+##Enlever les stopwords
+```{r}
+remove_stopwords <- function (sen){
+  sen_new <- sen[!sen %in% stop_words$word]
+  
+  return(paste(sen_new,collapse = " "))
+}
+
+clean_sentences_new <- c()
+
+for (i in clean_sentences){
+  clean_sentences_new <- c(clean_sentences_new,remove_stopwords(unlist(str_split(i, " "))))
+}
+
+head(clean_sentences_new, 10)
+```
+
+##GloVE Word Embedding
+
+```{r}
+#importer pretrain vecteur de Wiki
+word_embedding <- read.csv('glove.6B.100d.txt', sep=' ', quote='', stringsAsFactors=FALSE, header=FALSE)
+
+```
+Fonction à ajouter ces vecteurs de mots dans une liste
+
+```{r}
+lappend <- function (lst, ...){
+  lst <- c(lst, list(...))
+  return(lst)
+}
+
+#ajouter dans une liste
+add_emb <- function(data_emb){
+  dict <- list()
+  name <- c()
+  
+  for (row in 1:nrow(data_emb)){
+    # print(row)
+    
+    val <- c()
+    for (i in data_emb[row,2:ncol(data_emb)]){
+    
+        val <- c(val,i)
+    
+    }
+    dict <- lappend(dict,val)
+    
+  }
+  
+  names(dict) <- data_emb[,1]
+
+  return (dict)
+}
+
+```
+Cette partie prendre beaucoup de temps à extraire les vecteurs de mots.
+Donc soit vous patientez lors de l'exécution, soir vous chargez le fichier embeddings.RData
+Par défaut, j'ai chargé via .RData pour knit vers HTML.
+
+```{r}
+# #couper en paquets de 100000
+# seg_size <- 100000
+# nb_bloc <- nrow(word_embedding)%/%seg_size
+# index_row <- split(1:(nb_bloc*seg_size), ceiling(seq_along(1:(nb_bloc*seg_size))/seg_size))
+# #la derniere partie est le reste
+# index_row[[as.character(nb_bloc+1)]] <- ((nb_bloc*seg_size)+1):nrow(doc_id)
+#  
+# 
+# ind <- 0
+# for (i in index_row){
+#   
+#   if (ind == 0){
+#     embeddings <- add_emb(word_embedding[i,])
+#   }else{
+#     word <- add_emb(word_embedding[i,])
+#     embeddings <- lappend(embeddings,word)
+#   }
+#   
+#   ind <- ind + 1
+#   print(ind)
+#   print(length(words))
+#   # break
+# }
+
+load("embeddings.RData")
+```
+
+
+##Vecteurs pour les phrases
+```{r}
+sentence_vectors <- list()
+
+for (i in clean_sentences_new){
+  
+  v <- rep_len(0,100)
+  
+  if (nchar(i) != 0){
+    
+    denum <- length(unlist(str_split(i," ")))+0.001 
+    
+    for (w in unlist(str_split(i," "))){
+      
+      if (is.null(embeddings[[w]])){
+        
+        v <- v + rep_len(0,100)
+      }else{
+       
+        v <- v + embeddings[[w]]
+      }
+    }
+    
+    v <- v/denum
+    
+  }else{
+    
+    v <- v + rep_len(0,100)
+  
+  }
+  sentence_vectors <- lappend(sentence_vectors,v)
+}
+
+head(sentence_vectors)
+
+```
+
+##Matrice de similarité
+```{r}
+#matrice similarité
+#exemple chapitre 20
+chap_20 <- data_chapter[which(data_chapter$chapitre == 20),]
+chap_20$line <- seq(nrow(chap_20))
+sim_mat <- matrix(0,nrow = nrow(chap_20),
+                  ncol=nrow(chap_20))
+
+cosine_similarity <- function(v1, v2){
+  dot_product <- v1 %*% v2
+  # print(dot_product)
+  norm_prod <- sqrt(sum(v1**2)) * sqrt(sum(v2**2))
+  # print(norm_prod)
+  return(as.numeric(dot_product / norm_prod))
+}
+
+for (i in seq(nrow(chap_20))){
+  for (j in seq(nrow(chap_20))){
+    if (i != j){
+      sim_mat[i,j] <-  cosine_similarity(sentence_vectors[[i]],
+                                          sentence_vectors[[j]])
+    }
+  }
+}
+```
+
+##Applique PageRank
+```{r}
+nx_graph <- graph_from_adjacency_matrix(sim_mat)
+scores <- page.rank(nx_graph)
+
+```
+
+##Extraction des résumés
+```{r}
+scores_sentences <- data.frame(score = scores$vector, line = seq(length(scores$vector)))
+ranked_sentences <- scores_sentences %>% 
+  arrange(desc(score)) %>%
+  inner_join(chap_20)
+  
+#extraire 10 phrases commme résumée
+head(ranked_sentences,20)
+
+```
+
+##Words pairs
+```{r}
+section_words <- data_chapter %>%
+  select(-c(line, chapitre, partie)) %>%
+  mutate(section  = row_number() %/% 10) %>%
+  filter(section>0) %>%
+  unnest_tokens(word, text) %>%
+  filter(!word %in% stop_words$word)
+
+word_pairs <- section_words %>%
+  pairwise_count(word, section , sort = TRUE)
+
+head(word_pairs, 20)
+```
+
+##Graphe word pairs
+```{r}
+set.seed(1234)
+section_words %>%
+  group_by(word) %>%
+  filter(n() > 50) %>%
+  pairwise_cor(word, section , sort = T )%>%
+  filter(correlation > .20) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout = "fr") +
+  geom_edge_link(aes(edge_alpha = correlation, edge_width = correlation), edge_colour = "darkred") +
+  geom_node_point(size = 4) +
+  geom_node_text(aes(label = name), repel = TRUE, 
+                 point.padding = unit(0.2, "lines")) +
+  theme_void()
+
+
+```
+
+

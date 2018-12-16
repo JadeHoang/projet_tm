@@ -5,12 +5,8 @@ output:
     df_print: paged
 ---
 
-# Initialisation de l'environnement
-```{r}
-rm(list=ls())
-```
 # Chargement des bibliothèques
-```{r, echo = false}
+```{r, echo = F}
 # install.packages("tidytext")
 library("tidytext")
 # install.packages("tidyverse")
@@ -25,8 +21,9 @@ library("wordcloud")
 library("ggraph")
 # install.packages("widyr")
 library("widyr")
+#install.packages("networkD3")
+library("networkD3")
 ```
-
 
 # Chargement des données
 ```{r}
@@ -34,7 +31,7 @@ data<- readLines("Frank Herbert - Dune.txt_clean")
 head(data)
 ```
 
-#Phrase per line
+#Phrase per ligne
 ```{r}
 phrase <- c()
 
@@ -101,7 +98,7 @@ head(data_chapter)
 
 ##Enlever les lignes "= = = = = =" et vide
 ```{r}
-data_chapter <- data_chapter[-which(data_chapter$text %in% c("= = = = = =","")),]
+data_chapter <- data_chapter[-which(data_chapter$text %in% c("= = = = = =",""," ")),]
 data_chapter <- data_chapter[-1,]
 data_chapter$line <- 1:nrow(data_chapter)
 head(data_chapter)
@@ -166,6 +163,8 @@ add_in_dict2<- function(data_dict){
   # print(name)
   return(dict)
 }
+#dictionaire des personnages
+load("dictionaire_perso.RData")
 
 character.dict <- add_in_dict(dict_perso[,-1])
 character.dict
@@ -186,6 +185,7 @@ DTM <-as.matrix(dfm(toks, dictionary = dictionary(character.dict)))
 dim(DTM)
 ```
 
+Nombre de fois que chaque personnage apparaissent dans chaque chapitre
 ```{r}
 pers_chap <- as.data.frame(as.table(DTM),stringsAsFactors = FALSE)
 pers_chap$docs <- sapply(pers_chap$docs, function(x) gsub("text","",x))
@@ -199,7 +199,6 @@ head(pers_chap)
 Personnage par chapitre
 ```{r}
 pers_chap_matrix <- t(DTM)
-# pers_chap_matrix[pers_chap_matrix <= 4] <- 0
 pers_chap_matrix[pers_chap_matrix > 0] <- 1
 pers_chap_matrix
 ```
@@ -218,7 +217,7 @@ ordering <- h$labels[h$order]
 ordering
 ```
 
-
+Diagramme pour observer les coocurrences des personnages dans chaque chapitre
 ```{r}
 chapters <- pers_chap %>%
     filter(Freq > 1) %>%        # scenes with > 1 character
@@ -228,66 +227,36 @@ chapters <- pers_chap %>%
 
 ggplot(chapters, aes(chap, features)) +
     geom_point() +
-    geom_path(aes(group = chap))
+    geom_path(aes(group = chap))+
+    xlab("Chapitre")+
+    ylab("Personnage")
 ```
 
 Coocurrence matrice
 ```{r}
-# non_airport_scenes <- speaker_scene_matrix[, colSums(speaker_scene_matrix) < 10]
-
 cooccur <- pers_chap_matrix %*% t(pers_chap_matrix)
 
 heatmap(cooccur)
 ```
 
+Graphe coocurrence des personnages
 ```{r}
 library(igraph)
 g <- graph.adjacency(cooccur, weighted = TRUE, mode = "undirected", diag = FALSE)
 plot(g, edge.width = E(g)$weight)
 ```
 
-```{r}
-degree(g)
-```
+Pourtant, il ne nous semble pas clair ce graph car dans chaque chapitre peut avoir plusieurs personnages qui apparaissent. 
+Donc, il nous intéresse à voir les relations entre les personnages par chapitre.
 
-```{r}
-betweenness(g)
-```
+Nous cherchons à identifier les index des nom des personnages puis appliquer un algo à calculer les poids entre les noms des personnages pour une fenêtre de 15 mots avant et après. 
+Si on ne trouve pas le nom d'un personnage dans la fenêtre d'un autre personnage, c'est à dire il n'existe pas de relation entre ces 2 personnages dans ce chapitre car le poids égal à 0.
 
-```{r}
-# install.packages("d3Network")
-library(d3Network)
-library(networkD3)
-sg <- simplify(g)
-df <- get.edgelist(g, names=TRUE)
-df
-df <- as.data.frame(df)
-colnames(df) <- c('source', 'target')
-df$value <- rep(1, nrow(df))
-df
-# get communities
-fc <- fastgreedy.community(g)
-com <- membership(fc)
-node.info <- data.frame(name=names(com), group=as.vector(com))
-links <- data.frame(source=match(df$source, node.info$name)-1,target=match(df$target, node.info$name)-1,value=df$value)
-df
-forceNetwork(Links = links, Nodes = node.info,Source = "source", Target = "target",Value = "value", NodeID = "name",Group = "group", opacity = 1, opacityNoHover=1,clickAction = TRUE)
-```
-
-##corpustools
-```{r}
-install.packages("corpustools")
-library(corpustools)
-tc <- create_tcorpus(df_content_chap$text[1], doc_column = "id")
-tc$tokens
-hits <- tc$search_features('"paul jessica*"~10')
-kwic <- tc$kwic(hits, ntokens = 3)
-head(kwic )
-```
 ##Position des tokens trouvés
 
-TRouver les positions des mots du  vocabulaire dans le corpus puis calculer leur scores 
+Trouver les positions des mots du vocabulaire dans le corpus puis calculer leur scores 
 ```{r}
+#fonction trouver les index des noms 
 find_position <- function(chap.ind, source, target){
   
   tok <- tokens(tolower(df_content_chap$text[chap.ind]),"word",remove_punct= TRUE) %>%
@@ -299,7 +268,6 @@ find_position <- function(chap.ind, source, target){
               "t" = which(tok %in% character.dict.underscore[[target]])))
 }
 
-find_position(1,"paul atreides","lady jessica")
 ```
 
 Algo calculer score entre les personnage qui co ocurrent dans un chapitre
@@ -335,20 +303,7 @@ scores <- function (source.ind, target.ind){
   
   return (scoreToShow)
 }
-scores(find_position(1,"paul atreides","paul atreides")$s, 
-       find_position(1,"paul atreides","paul atreides")$t)
 
-scores(find_position(1,"paul atreides","lady jessica")$s, 
-       find_position(1,"paul atreides","lady jessica")$t)
-
-scores(find_position(1,"paul atreides","duke leto atreides")$s, 
-       find_position(1,"paul atreides","duke leto atreides")$t)
-
-scores(find_position(1,"lady jessica","paul atreides")$s, 
-       find_position(1,"lady jessica","paul atreides")$t)
-
-scores(find_position(1,"duke leto atreides","paul atreides")$s, 
-       find_position(1,"duke leto atreides","paul atreides")$t)
 ```
 
 Trouver les combinaisons de source et target
@@ -356,49 +311,60 @@ Trouver les combinaisons de source et target
 
 #les chapters ont des relations
 mult <- pers_chap_matrix[, colSums(pers_chap_matrix) > 1]
-# mult <- speaker_scene_matrix[, colSums(speaker_scene_matrix) > 1]
 
-# pre-generate cooccurrence data
+# les noms source et target dans chaque chapitre
 cooccurences <- lapply(seq_len(ncol(mult)), function(i) {
-  # use as.matrix to handle case where i == 1
-  # mat <- as.matrix(mult[, seq_len(2)]) #column of chap 1:i
+  
   mat <- as.matrix(mult[, i])
-  mat <- as.matrix(mat[rowSums(mat) > 0, ]) #character with value 1
+  mat <- as.matrix(mat[rowSums(mat) > 0, ])
   co <- mat %*% t(mat) %>% 
     melt(varnames = c("Source", "Target"),value.name ="poids") %>% 
       filter(Source != Target)#garder que des source et target different 
   co <-  data.frame(lapply(co, as.character), stringsAsFactors=FALSE)
 })
 
-length(cooccurences)
-
-#1ere chapitre
-cooccurences[[1]]
-
-#relation par chapitre
-poids.perso <- lapply(seq_len(length(cooccurences)), function(i) {
-    cooccurences[[i]] %>%
-    rowwise() %>%
-      mutate(poids = scores(find_position(i,Source,Target)$s, 
-                          find_position(i,Source,Target)$t)) %>%
-        filter(poids > 0)
-})
-
-
-
 ```
 
-Pour les graphes complexes
+##Pour un simple graphe sans regroupement des groupe de personnage
+Attention: Il prendre un peu de temps à exécuter poids.perso donc soit vous chargez directement le fichier .RData pour économiser le tepms, soit vous patientez lors de l'exécution de poids.perso
 ```{r}
-poids.perso.group <- lapply(seq_len(length(poids.perso)), function(i) {
-    as.data.frame(poids.perso[[i]],stringAsFactor  = FALSE) %>%
-      left_join(personnage[,!(names(personnage) == "group")], by = c("Source" = "nom")) %>%
-        select(-Source) %>%
-        rename(Source = id) %>%
-      left_join(personnage[,!(names(personnage) == "group")], by = c("Target" = "nom")) %>%
-        select(-Target) %>%
-        rename(Target = id)
-})
+#calculer le poids des relations par chapitre
+#Attention: prendre un peu de temps à exécuter
+
+# poids.perso <- lapply(seq_len(length(cooccurences)), function(i) {
+#     cooccurences[[i]] %>%
+#     rowwise() %>%
+#       mutate(poids = scores(find_position(i,Source,Target)$s,
+#                           find_position(i,Source,Target)$t)) %>%
+#         filter(poids > 0)
+# })
+
+#à charger avec poids_per_chap.RData
+load("poids_per_chap.RData")
+message("Exemple pour chapitre 1; ")
+poids.perso[[1]]
+```
+
+
+##Pour les graphes complexes (avec les groupes de personnages)
+Attention: Il prendre un peu de temps à exécuter poids.perso.group donc soit vous chargez directement le fichier .RData pour économiser le tepms, soit vous patientez lors de l'exécution de poids.perso.group
+```{r}
+#attention : prendre un peu de temps à éxecuter
+
+# poids.perso.group <- lapply(seq_len(length(poids.perso)), function(i) {
+#     as.data.frame(poids.perso[[i]],stringAsFactor  = FALSE) %>%
+#       left_join(personnage[,!(names(personnage) == "group")], by = c("Source" = "nom")) %>%
+#         select(-Source) %>%
+#         rename(Source = id) %>%
+#       left_join(personnage[,!(names(personnage) == "group")], by = c("Target" = "nom")) %>%
+#         select(-Target) %>%
+#         rename(Target = id)
+# })
+
+#à charger avec poid_forceNet.RData
+load("poids_forceNet.RData")
+message("Exemple pour chapitre 1; ")
+poids.perso.group[[1]]
 ```
 
 Exemple pour Chapitre 1
