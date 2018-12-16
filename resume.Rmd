@@ -3,83 +3,20 @@ title: "vectorielles des mots"
 output: html_notebook
 ---
 
-```{r,echo = F}
-library(text2vec)
-library(Matrix)
-library(sparsesvd)
-library(tictoc)
-library(MASS)
-# install.packages("tm")
+```{r}
+library(tidytext)
 library(tm)
 library(NLP)
 library(stringr)
 ```
 
-```{r}
-# max_vocabulary_size <- 10000
-# corpus <- readLines('text8', n=1, warn=FALSE)
-# iterator <- itoken(corpus , tokenizer=space_tokenizer, progressbar=FALSE)
-# vocabulary <- create_vocabulary(iterator)
-# print(sum(vocabulary$term_count))
-```
+
 
 ```{r}
-# pruned_vocabulary <- prune_vocabulary(vocabulary, vocab_term_max=max_vocabulary_size)
-# vectorizer <- vocab_vectorizer(pruned_vocabulary)
-# l <- 5
-# X <- create_tcm(iterator, vectorizer, skip_grams_window=l, weights=rep(1, l))
-# print(nnzero(X) / max_vocabulary_size**2)
-```
-
-```{r}
-# k <- 5
-# total <- sum(X)
-# word_prob <- colSums(X) / total
-# M <- X / total # calcul des p_ij
-# p_i_p_j <- word_prob %*% t(word_prob) # calcul des p_i * p_j
-# M <- log(M * 1/p_i_p_j) - log(k) # calcul de la PMI diminuée de log(k)
-# M[is.na(M)] <- 0 # gestion des NA causé par les log(p_ij) quand p_ij = 0
-# M[M<0] <- 0 # seuillage à 0 pour obtenir l'information mutuelle diminuée positive
-```
-
-```{r}
-# M <- drop0(M) # retrait des 0 explicites pour préserver une représentation creuse efficace
-# print(nnzero(M) / max_vocabulary_size**2)
-# 
-# decomposition <- sparsesvd(M, rank=100)
-# vectors <- decomposition$u %*% sqrt(diag(decomposition$d))
-# 
-# words <- pruned_vocabulary$term
-# 
-# cosine_similarity <- function(v1, v2){
-#   dot_product <- v1 %*% v2
-#   norm_prod <- sqrt(sum(v1**2)) * sqrt(sum(v2**2))
-#   return(as.numeric(dot_product / norm_prod))
-# }
-# 
-# find_closest_words <- function(v, n=5){
-#   similarity <- numeric(nrow(vectors))
-#   for(i in 1:nrow(vectors)){
-#     similarity[i] <- cosine_similarity(v, vectors[i, ])
-#   }
-#   ordered_words <- words[order(-similarity)]
-#   return(ordered_words[1:n])
-# }
-# 
-# resolve_analogy <- function(word_a, word_b, word_c, n=1){
-#   word_d <- vectors[match(word_b, words), ] - vectors[match(word_a, words), ] + vectors[match(word_c, words), ]
-#   return(find_closest_words(word_d, n))
-# }
-```
-
-```{r}
-#cosine_similarity(vectors[match('princess', words), ], vectors[match('irulan', words), ])
-```
-
-```{r}
+#enlever le chiffre ponctuation stop_word
 text_pre<-data_chapter$text %>% 
   sapply(tolower, USE.NAMES = F) %>% 
-  removeWords(stopwords('en')) %>% 
+  removeWords(stop_words$word) %>% 
   removePunctuation() %>% 
   removeNumbers() %>%
   stemDocument()
@@ -88,136 +25,77 @@ data_chapter$text_pre<-text_pre
 data_chapter
 ```
 
+utilise BM25 (mesure de point comme tf-idf) analyser livre par chapitre 
 ```{r}
-data_chapter.cp<-data_chapter
-rm_sentence_short<-function(data_chapter.cp){
-  for (i in 1:nrow(data_chapter.cp)) {
-    tk<-str_split(data_chapter.cp$text_pre[i],'\\s+')[[1]]
-    if(length(tk)<=3 || data_chapter.cp$text_pre[i]=="") data_chapter.cp<-data_chapter.cp[-i,]
-  }
-  return(data_chapter.cp)
-}
-data_chapter.cp<-rm_sentence_short(data_chapter.cp)
+#nombre de chapitre
+nb_chapitre<-max(as.numeric(unique(data_chapter$chapitre)))
+pre_text_chap<-c()
+#combine chaque chapitre 
+for(i in 1:nb_chapitre){
+  t<-as.String(data_chapter[which(data_chapter$chapitre==i),"text_pre"])
+  pre_text_chap<-c(pre_text_chap, t)
+} 
+#enlever ponctuation
+pre_text_chap <- gsub("\\\"|[.,]|[\n]|(c\\()|\\)","",pre_text_chap)
+data_chap_cb<-data.frame(chapitre=1:nb_chapitre,text_pre=pre_text_chap,stringsAsFactors = FALSE)
+hp.corpus <- Corpus(VectorSource(data_chap_cb$text_pre))
 
-
-calculate_similarity<-function(sen1,sen2){
-  counter<-0
-  sen1<-str_split(sen1,'\\s+')
-  sen2<-str_split(sen2,'\\s+')
-  for (word in as.vector(sen1[[1]])) {
-    if(word %in% as.vector(sen2[[1]])) counter<-counter+1
-  }
-  return(counter/(log2(length(as.vector(sen1[[1]])))+log2(length(as.vector(sen2[[1]])))))
-}
-
-# compute_similarity_by_avg<-function(sen1,sen2,words){
-#   
-#   sen1<-str_split(sen1,'\\s+')
-#   sen2<-str_split(sen2,'\\s+')
-#   sen1<-as.vector(sen1[[1]])
-#   sen1<-sen1[which(sen1!="")]
-#   sen2<-as.vector(sen2[[1]])
-#   sen2<-sen2[which(sen2!="")]
-#   if(length(sen1)==0 || length(sen2)==0) return(0)
-#   else{
-#     vec1<-rep(0,100)
-#     for(i in 1:length(sen1)){
-#       if(!all(is.na(vectors[match(sen1[i], words), ]))) vec1<-vec1+vectors[match(sen1[i], words), ]
-#     } 
-#   
-#     vec2<-rep(0,100)
-#     for(i in 2:length(sen2)){
-#       if(!all(is.na(vectors[match(sen2[i], words), ]))) vec2<-vec2+vectors[match(sen2[i], words), ]
-#     } 
-#   
-#     similarity<-cosine_similarity(vec1/length(sen1),vec2/length(sen2))
-#     return(similarity)
-#   }
-# }
-
-create_graph<-function(sentences){
-  num<-length(sentences)
-  board<-matrix(0,nrow = num,ncol = num)
-  for (i in 1:num) {
-    for (j in 1:num) {
-      if(i != j) 
-        board[i,j]<-calculate_similarity(sentences[i],sentences[j])
-    }
-    
-  }
-  return(board)
-}
-
-different<-function(scores,old_scores){
-  flag<-FALSE
-  for(i in 1:length(scores)){
-    if(abs(scores[i]-old_scores[i])>0.0001){
-      flag<-TRUE
-      break
+tdm <- TermDocumentMatrix(hp.corpus)
+tdm <-as.matrix(tdm)
+#calculer tfidf
+tf<- tdm/colSums(tdm)
+idf<-log2(ncol(tdm)/(rowSums(tdm >0)+1))
+#calcule la similarity de chaque phrase sachant que la chapitre
+######input
+#         data: 
+compute_similarity<-function(data,tf,idf,num.chapitre){
+  sim<-rep(0,length(data))
+  for (i in 1:length(data)) {
+    sent<-data[i]
+    sent<-str_split(sent,'\\s+')
+    sent<-as.vector(sent[[1]])
+    sent<-sent[which(sent!="")]
+    k<-1.2
+    for (w in sent) {
+      #BM25 k=1.2
+      if(str_count(w)>2) sim[i]<-sim[i]+idf[w]*((k + 1) * tf[w,num.chapitre]) / (k + tf[w,num.chapitre]) * 1/sqrt(length(sent))
     }
   }
-  return(flag)
+  return(sim)
 }
 
-calculate_score<-function(weight_graph,scores,i){
-  len<-nrow(weight_graph)
-  d<-0.85
-  added_score<-0
-  
-  for(j in 1:len){
-    fraction<-0
-    denominator<-0
-    
-    fraction<-weight_graph[j,i]*scores[j]
-    for (k in 1:len) {
-      denominator<-denominator+weight_graph[j,k]
-    }
-    
-    if(denominator!=0 && !is.na(denominator)) added_score<-added_score+ fraction/denominator
-  }
-  
-  return((1-d)+d*added_score)
+similaire<-c()
+for (i in 1:nb_chapitre) {
+  similaire<-c(similaire,compute_similarity(data_chapter$text_pre[which(data_chapter$chapitre==i)],tf,idf,i))
 }
 
-weight_sentence<-function(weight_graph){
-  scores<-rep(0.5,nrow(weight_graph))
-  old_scores<-rep(0,nrow(weight_graph))
-  
-  while(different(scores,old_scores)){
-    for (i in 1:nrow(weight_graph)) {
-      old_scores[i]<-scores[i]
-    }
-    for (i in 1:nrow(weight_graph)) {
-      scores[i]<-calculate_score(weight_graph,scores,i)
-    }
-  }
-  return(scores)
-}
-
-textRank <- function(start_weight,iters,d,sim_matrix){
-  count1 <- 0
-  num <- nrow(sim_matrix)
-  while(count1 < iters){
-    start_weight <- matrix(1,1,num)*(1-d) + ((start_weight %>% as.matrix %>% t) %*% sim_matrix) * d
-    start_weight <- as.vector(start_weight)
-    count1 <- count1 + 1
-  }
-  end_weight <- start_weight
-  return(end_weight)
-}
-
+data_chapter$smilarity<-similaire
 ```
 
+```{r}
+ggplot(data_chapter, aes(x = smilarity, fill = chapitre)) +
+  geom_density(alpha = 0.3)
+
+ggplot(data_chapter, aes(x = factor(chapitre), y = smilarity, fill = factor(chapitre))) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Pastel2")
+
+#le 10 plus haut point dans chapitre 1
+part1<-data_chapter[which(data_chapter$chapitre==1),]
+part1$text[sort(order(part1$smilarity,decreasing = T)[1:10])]
+methode1<-part1$line[sort(order(part1$smilarity,decreasing = T)[1:10])]
+methode1
+```
+
+calculer frequence de token, m est le plus frquence de token, le frquence de chaque mot divise par m est le coefficient de chaque mot, ensuite calculer le coefficient de chaque phrase
 ```{r}
 hp.corpus <- Corpus(VectorSource(data_chapter$text_pre))
 tdm <- TermDocumentMatrix(hp.corpus)
 freq <- rowSums(as.matrix(tdm))
 m<-sort(freq, decreasing = T)[1]
 freq<-freq/m
+#ici enlever le token superieur 0.9 et inferieur 0.05 
 freq<-freq[which(freq<=0.9 & freq>=0.05)]
-freq
-
-data_test<-data_chapter[which(data_chapter$chapitre==1),]
 
 compute_point<-function(data,freq){
   ranking<-rep(0,length(data))
@@ -233,33 +111,127 @@ compute_point<-function(data,freq){
   return(ranking)
 }
 
-
 ranking<-compute_point(data_chapter$text_pre,freq)
 data_chapter$ranking<-ranking
+```
 
-library(ggplot2)
+```{r}
 ggplot(data_chapter, aes(x = ranking, fill = partie)) +
   geom_density(alpha = 0.3)
 
-ggplot(data_chapter, aes(x = factor(partie), y = ranking, fill = factor(partie))) +
+ggplot(data_chapter, aes(x = factor(chapitre), y = ranking, fill = factor(chapitre))) +
   geom_boxplot() +
   scale_fill_brewer(palette = "Pastel2")
 
+part1<-data_chapter[which(data_chapter$ranking>1 & data_chapter$ranking<2.5 & data_chapter$chapitre==1),]
+part1$text[sort(order(part1$ranking,decreasing = T)[1:10])]
+methode2<-part1$line[sort(order(part1$ranking,decreasing = T)[1:10])]
+methode2
+```
+
+utilise algo text rank calculer chaque phrase 
+
+```{r}
+data_chapter.cp<-data_chapter
+rm_sentence_short<-function(data_chapter.cp){
+  for (i in 1:nrow(data_chapter.cp)) {
+    tk<-str_split(data_chapter.cp$text_pre[i],'\\s+')[[1]]
+    if(length(tk)<=3 || data_chapter.cp$text_pre[i]=="") data_chapter.cp<-data_chapter.cp[-i,]
+  }
+  return(data_chapter.cp)
+}
+data_chapter.cp<-rm_sentence_short(data_chapter.cp)
+
+#calculate similarite de deux phrase
+calculate_similarity<-function(sen1,sen2){
+  sen1<-str_split(sen1,'\\s+')
+  sen2<-str_split(sen2,'\\s+')
+  counter<-length(intersect(as.vector(sen1[[1]]),as.vector(sen2[[1]])))
+  return(counter/(log2(length(as.vector(sen1[[1]])))+log2(length(as.vector(sen2[[1]])))))
+}
+#creer matrix n*n, n est nombre de phrase
+create_graph<-function(sentences){
+  num<-length(sentences)
+  board<-matrix(0,num,num)
+  for (i in 1:num) {
+    for (j in 1:num) {
+        if(i!=j) board[i,j]<-calculate_similarity(sentences[i],sentences[j])
+    }
+  }
+  #traitement normalisé
+  # for(i in 1:num){
+  #   row_sum <- sum(board[i,])
+  #   for(j in 1:num){
+  #     board[i,j] <- board[i,j]/row_sum
+  #   }
+  # }
+  return(board)
+}
+#comparer deux scores de phrase
+different<-function(scores,old_scores){
+  flag<-FALSE
+  for(i in 1:length(scores)){
+    if(abs(scores[i]-old_scores[i])>0.001){
+      flag<-TRUE
+      break
+    }
+  }
+  return(flag)
+}
+#calculer socres de phrase
+calculate_score<-function(weight_graph,scores,i){
+  len<-nrow(weight_graph)
+  d<-0.85 #seuil
+  added_score<-0
+  
+  for(j in 1:len){
+    fraction<-0
+    denominator<-0
+    fraction<-weight_graph[j,i]*scores[j]
+    for (k in 1:len) {
+      denominator<-denominator+weight_graph[j,k]
+    }
+    if(denominator!=0 && !is.na(denominator)) added_score<-added_score+ fraction/denominator
+  }
+  
+  return((1-d)+d*added_score)
+}
+
+weight_sentence<-function(weight_graph){
+  #scores initial
+  scores<-rep(0.5,nrow(weight_graph))
+  old_scores<-rep(0,nrow(weight_graph))
+  
+  while(different(scores,old_scores)){
+    for (i in 1:nrow(weight_graph)) {
+      old_scores[i]<-scores[i]
+    }
+    for (i in 1:nrow(weight_graph)) {
+      scores[i]<-calculate_score(weight_graph,scores,i)
+    }
+ } 
+  return(scores)
+}
 
 ```
 
 ```{r}
-part1<-data_chapter[which(data_chapter$ranking>1 & data_chapter$ranking<2.5 & data_chapter$partie==1),]
-part1$text[sort(order(part1$ranking))[1:10]]
-```
-
-```{r}
+#test avec chapitre 1
 data_test<-data_chapter[which(data_chapter.cp$chapitre==1),]
 phrase_sim<-create_graph(data_test$text_pre)
 tmp<-weight_sentence(phrase_sim)
 ```
 
 ```{r}
-data_test$text[sort(order(tmp))[1:10]]
+data_test$text[sort(order(tmp,decreasing = T)[1:10])]
+methode3<-data_test$line[sort(order(tmp,decreasing = T)[1:10])]
+methode3
+```
+
+choisir les phrase dans ces 3 methodes
+```{r}
+res<-union(union(methode1,methode2),methode3)
+sort(res)
+data_chapter$text[sort(res)]
 ```
 
