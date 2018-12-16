@@ -5,7 +5,7 @@ date: "30/11/2018"
 output: html_document
 ---
 
-```{r, echo = false}
+```{r,echo = F}
 library(tidyverse)
 library(rvest)
 library(stringr) 
@@ -52,6 +52,7 @@ nom_perso
 
 ```
 
+#Regrouper les personnages par Maison ou organisation
 ```{r}
 data_nom <- tibble(group = 1:length(nom_perso), nom = nom_perso)
 data_nom$group <- cumsum(as.integer(data_nom$nom %in% group_data))
@@ -74,13 +75,15 @@ personnage$id <- 0:(nrow(personnage) - 1)
 personnage
 ```
 
+#Séparer les noms par différents noms utilisés dans le livre
 ```{r}
-dict_perso <- cbind(personnage, nom_dup = personnage$nom) %>%
+dict_perso <- cbind(select(personnage,-id), nom_dup = personnage$nom) %>%
   separate(nom_dup,c("nom1","nom2","nom3","nom4","nom5"), " ",extra = "drop")
 
 dict_perso
 ```
 
+#enlever les noms qui ne conviennent pas
 ```{r}
 dict_perso[dict_perso == "atreides" | 
              dict_perso  == "harkonnen" |

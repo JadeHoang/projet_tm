@@ -128,16 +128,14 @@ $(document).ready(function () {
 </div>
 
 
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────────── tidyverse 1.2.1 ──</code></pre>
 <pre><code>## ✔ ggplot2 3.1.0     ✔ purrr   0.2.5
 ## ✔ tibble  1.4.2     ✔ dplyr   0.7.8
 ## ✔ tidyr   0.8.2     ✔ stringr 1.3.1
 ## ✔ readr   1.1.1     ✔ forcats 0.3.0</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>## ── Conflicts ────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
-<pre class="r"><code>library(rvest)</code></pre>
 <pre><code>## Loading required package: xml2</code></pre>
 <pre><code>## 
 ## Attaching package: 'rvest'</code></pre>
@@ -147,9 +145,6 @@ $(document).ready(function () {
 <pre><code>## The following object is masked from 'package:readr':
 ## 
 ##     guess_encoding</code></pre>
-<pre class="r"><code>library(stringr) 
-# install.packages(&quot;rebus&quot;)
-library(rebus)</code></pre>
 <pre><code>## 
 ## Attaching package: 'rebus'</code></pre>
 <pre><code>## The following object is masked from 'package:stringr':
@@ -158,246 +153,115 @@ library(rebus)</code></pre>
 <pre><code>## The following object is masked from 'package:ggplot2':
 ## 
 ##     alpha</code></pre>
-<pre class="r"><code>library(lubridate)</code></pre>
 <pre><code>## 
 ## Attaching package: 'lubridate'</code></pre>
 <pre><code>## The following object is masked from 'package:base':
 ## 
 ##     date</code></pre>
-<pre class="r"><code># url &lt;-'https://en.wikipedia.org/wiki/Dune_(novel)#Characters'
-url &lt;- &quot;https://en.wikipedia.org/wiki/List_of_Dune_characters#Frank_Herbert_works&quot;
+<pre class="r"><code>url &lt;-'https://en.wikipedia.org/wiki/Dune_(novel)#Characters'
+# url &lt;- &quot;https://en.wikipedia.org/wiki/List_of_Dune_characters#Frank_Herbert_works&quot;
 
 page &lt;- read_html(url)</code></pre>
 <div id="scraping-a-partir-de-wiki-dunenovel" class="section level2">
 <h2>Scraping à partir de Wiki Dune(Novel)</h2>
-<pre class="r"><code># group_data &lt;- html_nodes(page,'dt') %&gt;% html_text()
-# message(&quot;Nom des groupes de personnages:&quot;)
-# group_data
-# nom_perso &lt;- html_nodes(page,'dl:nth-child(30) dt , dl:nth-child(26) dt , dl:nth-child(24) dt , h2+ dl dt , dl:nth-child(28) dt , li') %&gt;% html_text()
-# nom_perso &lt;- nom_perso[-c(1:31,65:length(nom_perso))]
-# message(&quot;Nom des personnages:&quot;)
-# nom_perso
-# nom_perso &lt;- gsub(&quot;\\\&quot;|[.]&quot;,&quot;&quot;,nom_perso)
-# nom_perso</code></pre>
-</div>
-<div id="scraping-a-partir-de-wiki-liste-de-personnage" class="section level2">
-<h2>Scraping à partir de Wiki Liste de personnage</h2>
-<pre class="r"><code>group_data &lt;- html_nodes(page,&quot;#Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #House_Harkonnen , #House_Atreides&quot;) %&gt;% html_text()
+<pre class="r"><code>group_data &lt;- html_nodes(page,'dt') %&gt;% html_text()
 message(&quot;Nom des groupes de personnages:&quot;)</code></pre>
 <pre><code>## Nom des groupes de personnages:</code></pre>
 <pre class="r"><code>group_data</code></pre>
-<pre><code>## [1] &quot;House Atreides&quot;  &quot;House Harkonnen&quot; &quot;Bene Gesserit&quot;   &quot;Bene Tleilax&quot;   
-## [5] &quot;Spacing Guild&quot;   &quot;Honored Matres&quot;  &quot;Fremen&quot;          &quot;Miscellaneous&quot;</code></pre>
-<pre class="r"><code>nom_perso &lt;- html_nodes(page,'.mw-headline , #Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #Imperial_House_Corrino , #House_Harkonnen ,#House_Atreides , li') %&gt;% html_text()
-nom_perso &lt;- nom_perso[-c(1:which(nom_perso == &quot;Frank Herbert works&quot;),
-                          which(nom_perso == &quot;Brian Herbert and Kevin J. Anderson works&quot;):length(nom_perso))]
-
-nom_perso %&gt;% str_replace_all(c(&quot;[.]&quot; = &quot;&quot;, &quot;;&quot; = &quot;,&quot;))</code></pre>
-<pre><code>##   [1] &quot;House Atreides&quot;                                                                                      
-##   [2] &quot;Arkie, Atreides House Trooper&quot;                                                                       
-##   [3] &quot;Alia Atreides, Paul's younger sister&quot;                                                                
-##   [4] &quot;Ghanima Atreides, Paul's daughter and twin sister of Leto II&quot;                                        
-##   [5] &quot;Ikonicre Atreides, majordomo to Leto II&quot;                                                             
-##   [6] &quot;Lady Jessica, Bene Gesserit and concubine of the Duke, mother of Paul and Alia&quot;                      
-##   [7] &quot;Duke Leto I Atreides, head of House Atreides&quot;                                                        
-##   [8] &quot;Leto, first son of Paul and Chani, died as a toddler&quot;                                                
-##   [9] &quot;Leto II Atreides, Paul's son and twin brother of Ghanima&quot;                                            
-##  [10] &quot;Moneo Atreides, majordomo and result of the God Emperor's breeding program, father of Siona Atreides&quot;
-##  [11] &quot;Paul Atreides, the Duke's son&quot;                                                                       
-##  [12] &quot;Siona Atreides, daughter of Moneo&quot;                                                                   
-##  [13] &quot;Gurney Halleck, staunchly loyal troubadour warrior of the Atreides&quot;                                  
-##  [14] &quot;Thufir Hawat, Mentat and Master of Assassins to House Atreides&quot;                                      
-##  [15] &quot;Duncan Idaho, Sword Master for House Atreides&quot;                                                       
-##  [16] &quot;Mattai, Atreides House Trooper&quot;                                                                      
-##  [17] &quot;Dr Wellington Yueh, Suk doctor for the Atreides&quot;                                                     
-##  [18] &quot;House Harkonnen&quot;                                                                                     
-##  [19] &quot;Abulurd Harkonnen II, half-brother of the Baron, father of Glossu and Feyd&quot;                          
-##  [20] &quot;Feyd-Rautha Rabban, nephew and heir of the Baron&quot;                                                    
-##  [21] &quot;Baron Vladimir Harkonnen, head of House Harkonnen&quot;                                                   
-##  [22] &quot;Umman Kudu, Former Guard Captain&quot;                                                                    
-##  [23] &quot;Iakin Nefud, Guard Captain&quot;                                                                          
-##  [24] &quot;Glossu 'Beast' Rabban, older nephew of the Baron&quot;                                                    
-##  [25] &quot;Piter De Vries, twisted Mentat&quot;                                                                      
-##  [26] &quot;Imperial House Corrino&quot;                                                                              
-##  [27] &quot;Anirul, Bene Gesserit wife of Shaddam IV&quot;                                                            
-##  [28] &quot;Aramsham, Sardaukar Captain&quot;                                                                         
-##  [29] &quot;Farad'n, son of Princess Wensicia and grandson of Shaddam IV&quot;                                        
-##  [30] &quot;Princess Irulan, firstborn eldest daughter of Shaddam IV and Lady Anirul&quot;                            
-##  [31] &quot;Shaddam IV, 81st Padishah Emperor of the Known Universe, last Corrino Emperor&quot;                       
-##  [32] &quot;Princess Wensicia, third daughter of Shaddam IV and Lady Anirul&quot;                                     
-##  [33] &quot;Count Hasimir Fenring, Imperial Spice Minister, Emperor Shaddam's closest friend and advisor&quot;        
-##  [34] &quot;Pardot Kynes, first Imperial Planetologist on Arrakis&quot;                                               
-##  [35] &quot;Torynn, Sardaukar Levenbrech&quot;                                                                        
-##  [36] &quot;Bene Gesserit&quot;                                                                                       
-##  [37] &quot;Tertius Eileen Anteac&quot;                                                                               
-##  [38] &quot;Bellonda&quot;                                                                                            
-##  [39] &quot;Sister Quintinius Violet Chenoeh&quot;                                                                    
-##  [40] &quot;Lady Margot Fenring, wife of Count Hasimir Fenring&quot;                                                  
-##  [41] &quot;Marcus Claire Luyseyal&quot;                                                                              
-##  [42] &quot;Reverend Mother Gaius Helen Mohiam, the Emperor's Truthsayer and mentor of Lady Jessica&quot;             
-##  [43] &quot;Darwi Odrade&quot;                                                                                        
-##  [44] &quot;Schwangyu&quot;                                                                                           
-##  [45] &quot;Sheeana&quot;                                                                                             
-##  [46] &quot;Reverend Mother Syaksa&quot;                                                                              
-##  [47] &quot;Tamalane&quot;                                                                                            
-##  [48] &quot;Miles Teg&quot;                                                                                           
-##  [49] &quot;Alma Mavis Taraza&quot;                                                                                   
-##  [50] &quot;Wanna, wife of Dr Wellington Yueh, Suk doctor&quot;                                                       
-##  [51] &quot;Bene Tleilax&quot;                                                                                        
-##  [52] &quot;Master Bijaz&quot;                                                                                        
-##  [53] &quot;Duro Nunepi, Tleilaxu Ambassador to Leto II&quot;                                                         
-##  [54] &quot;Ledden Pook, Tleilaxu Envoy&quot;                                                                         
-##  [55] &quot;Master Scytale&quot;                                                                                      
-##  [56] &quot;Master Tylwyth Waff&quot;                                                                                 
-##  [57] &quot;Wose, Tleilaxu Envoy&quot;                                                                                
-##  [58] &quot;Spacing Guild&quot;                                                                                       
-##  [59] &quot;Norma Cenva, inventor of foldspace technology, first Guild Navigator&quot;                                
-##  [60] &quot;Edric, Navigator in the events of Dune Messiah&quot;                                                      
-##  [61] &quot;Edrik, Navigator in the events of Hunters of Dune and Sandworms of Dune&quot;                             
-##  [62] &quot;D'murr Pilru, Guild Navigator, twin brother of C'tair Pilru of Ix&quot;                                   
-##  [63] &quot;Aurelius Venport, founder of VenKee enterprises, the ancestor of the Guild&quot;                          
-##  [64] &quot;Adrien Venport, son of Aurelius Venport and Norma Cenva&quot;                                             
-##  [65] &quot;Honored Matres&quot;                                                                                      
-##  [66] &quot;Dama&quot;                                                                                                
-##  [67] &quot;Logno&quot;                                                                                               
-##  [68] &quot;Murbella&quot;                                                                                            
-##  [69] &quot;Fremen&quot;                                                                                              
-##  [70] &quot;Chani, daughter of Liet-Kynes and Faroula, Paul's Fremen concubine&quot;                                  
-##  [71] &quot;Chatt the Leaper, captain of the Fedaykin, leader of the death commandos who guard Muad'Dib&quot;         
-##  [72] &quot;Dhuri, wife of Otheym&quot;                                                                               
-##  [73] &quot;Farok&quot;                                                                                               
-##  [74] &quot;Faroula, daughter of Heinar, wife of Warrick and then Liet-Kynes&quot;                                    
-##  [75] &quot;Geoff, killed by Jamis in ritual combat&quot;                                                             
-##  [76] &quot;Harah, wife of Jamis, the servant to Paul, later wife of Stilgar&quot;                                    
-##  [77] &quot;Jamis, killed by Paul in ritual combat&quot;                                                              
-##  [78] &quot;Kaleff, natural son of Geoff&quot;                                                                        
-##  [79] &quot;Korba, Fedaykin commando&quot;                                                                            
-##  [80] &quot;Lichna, daughter of Otheym&quot;                                                                          
-##  [81] &quot;Liet-Kynes, the son of Pardot Kynes, and the Imperial Planetologist on Arrakis&quot;                      
-##  [82] &quot;Orlop, natural son of Jamis&quot;                                                                         
-##  [83] &quot;Otheym, Fedaykin commando&quot;                                                                           
-##  [84] &quot;Reverend Mother Ramallo, Fremen Reverend Mother&quot;                                                     
-##  [85] &quot;Shadout Mapes, housekeeper for the royal family of Arrakis&quot;                                          
-##  [86] &quot;Shishakli, a squad leader of the Fedaykin&quot;                                                           
-##  [87] &quot;Shoab, Tharthar's brother&quot;                                                                           
-##  [88] &quot;Stilgar, Fremen naib, friend to Liet-Kynes&quot;                                                          
-##  [89] &quot;Tecrube, a Fremen and imperial clerk under Emperor Paul Atreides&quot;                                    
-##  [90] &quot;Tharthar, one of Stilgar's wives&quot;                                                                    
-##  [91] &quot;Turok, dies in a Harkonnen raid&quot;                                                                     
-##  [92] &quot;Miscellaneous&quot;                                                                                       
-##  [93] &quot;Abumojandia&quot;                                                                                         
-##  [94] &quot;Bannerjee, security officer under Emperor Paul Atreides&quot;                                             
-##  [95] &quot;Hadi Benotto, archaeologist&quot;                                                                         
-##  [96] &quot;Djedida, Korba´s secretary&quot;                                                                          
-##  [97] &quot;Esmar Tuek, smuggler&quot;                                                                                
-##  [98] &quot;Nayla, Fish Speaker&quot;                                                                                 
-##  [99] &quot;Tandis, Imperial messenger under Emperor Paul Atreides&quot;                                              
-## [100] &quot;Topri, spy and rebel under Siona Atreides&quot;                                                           
-## [101] &quot;Ulot, Rebel under Siona Atreides&quot;</code></pre>
-<pre class="r"><code>message(&quot;Nom des personnages:&quot;)</code></pre>
+<pre><code>## [1] &quot;House Atreides&quot;  &quot;House Harkonnen&quot; &quot;House Corrino&quot;   &quot;Bene Gesserit&quot;  
+## [5] &quot;Fremen&quot;          &quot;Smugglers&quot;</code></pre>
+<pre class="r"><code>nom_perso &lt;- html_nodes(page,'dl:nth-child(30) dt , dl:nth-child(26) dt , dl:nth-child(24) dt , h2+ dl dt , dl:nth-child(28) dt , li') %&gt;% html_text()
+nom_perso &lt;- nom_perso[-c(1:31,65:length(nom_perso))]
+message(&quot;Nom des personnages:&quot;)</code></pre>
 <pre><code>## Nom des personnages:</code></pre>
 <pre class="r"><code>nom_perso</code></pre>
-<pre><code>##   [1] &quot;House Atreides&quot;                                                                                      
-##   [2] &quot;Arkie, Atreides House Trooper&quot;                                                                       
-##   [3] &quot;Alia Atreides, Paul's younger sister&quot;                                                                
-##   [4] &quot;Ghanima Atreides, Paul's daughter and twin sister of Leto II&quot;                                        
-##   [5] &quot;Ikonicre Atreides, majordomo to Leto II&quot;                                                             
-##   [6] &quot;Lady Jessica, Bene Gesserit and concubine of the Duke; mother of Paul and Alia&quot;                      
-##   [7] &quot;Duke Leto I Atreides, head of House Atreides&quot;                                                        
-##   [8] &quot;Leto, first son of Paul and Chani; died as a toddler&quot;                                                
-##   [9] &quot;Leto II Atreides, Paul's son and twin brother of Ghanima&quot;                                            
-##  [10] &quot;Moneo Atreides, majordomo and result of the God Emperor's breeding program; father of Siona Atreides&quot;
-##  [11] &quot;Paul Atreides, the Duke's son&quot;                                                                       
-##  [12] &quot;Siona Atreides, daughter of Moneo&quot;                                                                   
-##  [13] &quot;Gurney Halleck, staunchly loyal troubadour warrior of the Atreides&quot;                                  
-##  [14] &quot;Thufir Hawat, Mentat and Master of Assassins to House Atreides&quot;                                      
-##  [15] &quot;Duncan Idaho, Sword Master for House Atreides&quot;                                                       
-##  [16] &quot;Mattai, Atreides House Trooper&quot;                                                                      
-##  [17] &quot;Dr. Wellington Yueh, Suk doctor for the Atreides&quot;                                                    
-##  [18] &quot;House Harkonnen&quot;                                                                                     
-##  [19] &quot;Abulurd Harkonnen II, half-brother of the Baron; father of Glossu and Feyd&quot;                          
-##  [20] &quot;Feyd-Rautha Rabban, nephew and heir of the Baron&quot;                                                    
-##  [21] &quot;Baron Vladimir Harkonnen, head of House Harkonnen&quot;                                                   
-##  [22] &quot;Umman Kudu, Former Guard Captain&quot;                                                                    
-##  [23] &quot;Iakin Nefud, Guard Captain&quot;                                                                          
-##  [24] &quot;Glossu 'Beast' Rabban, older nephew of the Baron&quot;                                                    
-##  [25] &quot;Piter De Vries, twisted Mentat&quot;                                                                      
-##  [26] &quot;Imperial House Corrino&quot;                                                                              
-##  [27] &quot;Anirul, Bene Gesserit wife of Shaddam IV&quot;                                                            
-##  [28] &quot;Aramsham, Sardaukar Captain&quot;                                                                         
-##  [29] &quot;Farad'n, son of Princess Wensicia and grandson of Shaddam IV&quot;                                        
-##  [30] &quot;Princess Irulan, firstborn eldest daughter of Shaddam IV and Lady Anirul&quot;                            
-##  [31] &quot;Shaddam IV, 81st Padishah Emperor of the Known Universe; last Corrino Emperor&quot;                       
-##  [32] &quot;Princess Wensicia, third daughter of Shaddam IV and Lady Anirul&quot;                                     
-##  [33] &quot;Count Hasimir Fenring, Imperial Spice Minister; Emperor Shaddam's closest friend and advisor&quot;        
-##  [34] &quot;Pardot Kynes, first Imperial Planetologist on Arrakis&quot;                                               
-##  [35] &quot;Torynn, Sardaukar Levenbrech&quot;                                                                        
-##  [36] &quot;Bene Gesserit&quot;                                                                                       
-##  [37] &quot;Tertius Eileen Anteac&quot;                                                                               
-##  [38] &quot;Bellonda&quot;                                                                                            
-##  [39] &quot;Sister Quintinius Violet Chenoeh&quot;                                                                    
-##  [40] &quot;Lady Margot Fenring, wife of Count Hasimir Fenring&quot;                                                  
-##  [41] &quot;Marcus Claire Luyseyal&quot;                                                                              
-##  [42] &quot;Reverend Mother Gaius Helen Mohiam, the Emperor's Truthsayer and mentor of Lady Jessica.&quot;            
-##  [43] &quot;Darwi Odrade&quot;                                                                                        
-##  [44] &quot;Schwangyu&quot;                                                                                           
-##  [45] &quot;Sheeana&quot;                                                                                             
-##  [46] &quot;Reverend Mother Syaksa&quot;                                                                              
-##  [47] &quot;Tamalane&quot;                                                                                            
-##  [48] &quot;Miles Teg&quot;                                                                                           
-##  [49] &quot;Alma Mavis Taraza&quot;                                                                                   
-##  [50] &quot;Wanna, wife of Dr. Wellington Yueh, Suk doctor&quot;                                                      
-##  [51] &quot;Bene Tleilax&quot;                                                                                        
-##  [52] &quot;Master Bijaz&quot;                                                                                        
-##  [53] &quot;Duro Nunepi, Tleilaxu Ambassador to Leto II&quot;                                                         
-##  [54] &quot;Ledden Pook, Tleilaxu Envoy&quot;                                                                         
-##  [55] &quot;Master Scytale&quot;                                                                                      
-##  [56] &quot;Master Tylwyth Waff&quot;                                                                                 
-##  [57] &quot;Wose, Tleilaxu Envoy&quot;                                                                                
-##  [58] &quot;Spacing Guild&quot;                                                                                       
-##  [59] &quot;Norma Cenva, inventor of foldspace technology; first Guild Navigator&quot;                                
-##  [60] &quot;Edric, Navigator in the events of Dune Messiah&quot;                                                      
-##  [61] &quot;Edrik, Navigator in the events of Hunters of Dune and Sandworms of Dune&quot;                             
-##  [62] &quot;D'murr Pilru, Guild Navigator, twin brother of C'tair Pilru of Ix&quot;                                   
-##  [63] &quot;Aurelius Venport, founder of VenKee enterprises, the ancestor of the Guild&quot;                          
-##  [64] &quot;Adrien Venport, son of Aurelius Venport and Norma Cenva&quot;                                             
-##  [65] &quot;Honored Matres&quot;                                                                                      
-##  [66] &quot;Dama&quot;                                                                                                
-##  [67] &quot;Logno&quot;                                                                                               
-##  [68] &quot;Murbella&quot;                                                                                            
-##  [69] &quot;Fremen&quot;                                                                                              
-##  [70] &quot;Chani, daughter of Liet-Kynes and Faroula; Paul's Fremen concubine&quot;                                  
-##  [71] &quot;Chatt the Leaper, captain of the Fedaykin, leader of the death commandos who guard Muad'Dib&quot;         
-##  [72] &quot;Dhuri, wife of Otheym&quot;                                                                               
-##  [73] &quot;Farok&quot;                                                                                               
-##  [74] &quot;Faroula, daughter of Heinar, wife of Warrick and then Liet-Kynes&quot;                                    
-##  [75] &quot;Geoff, killed by Jamis in ritual combat&quot;                                                             
-##  [76] &quot;Harah, wife of Jamis, the servant to Paul; later wife of Stilgar&quot;                                    
-##  [77] &quot;Jamis, killed by Paul in ritual combat&quot;                                                              
-##  [78] &quot;Kaleff, natural son of Geoff&quot;                                                                        
-##  [79] &quot;Korba, Fedaykin commando&quot;                                                                            
-##  [80] &quot;Lichna, daughter of Otheym&quot;                                                                          
-##  [81] &quot;Liet-Kynes, the son of Pardot Kynes, and the Imperial Planetologist on Arrakis&quot;                      
-##  [82] &quot;Orlop, natural son of Jamis&quot;                                                                         
-##  [83] &quot;Otheym, Fedaykin commando&quot;                                                                           
-##  [84] &quot;Reverend Mother Ramallo, Fremen Reverend Mother&quot;                                                     
-##  [85] &quot;Shadout Mapes, housekeeper for the royal family of Arrakis&quot;                                          
-##  [86] &quot;Shishakli, a squad leader of the Fedaykin&quot;                                                           
-##  [87] &quot;Shoab, Tharthar's brother&quot;                                                                           
-##  [88] &quot;Stilgar, Fremen naib, friend to Liet-Kynes&quot;                                                          
-##  [89] &quot;Tecrube, a Fremen and imperial clerk under Emperor Paul Atreides&quot;                                    
-##  [90] &quot;Tharthar, one of Stilgar's wives&quot;                                                                    
-##  [91] &quot;Turok, dies in a Harkonnen raid&quot;                                                                     
-##  [92] &quot;Miscellaneous&quot;                                                                                       
-##  [93] &quot;Abumojandia&quot;                                                                                         
-##  [94] &quot;Bannerjee, security officer under Emperor Paul Atreides&quot;                                             
-##  [95] &quot;Hadi Benotto, archaeologist&quot;                                                                         
-##  [96] &quot;Djedida, Korba´s secretary&quot;                                                                          
-##  [97] &quot;Esmar Tuek, smuggler&quot;                                                                                
-##  [98] &quot;Nayla, Fish Speaker&quot;                                                                                 
-##  [99] &quot;Tandis, Imperial messenger under Emperor Paul Atreides&quot;                                              
-## [100] &quot;Topri, spy and rebel under Siona Atreides&quot;                                                           
-## [101] &quot;Ulot, Rebel under Siona Atreides&quot;</code></pre>
+<pre><code>##  [1] &quot;House Atreides&quot;                                                                                                                                           
+##  [2] &quot;Paul Atreides, the Duke's son, and main character of the novel.&quot;                                                                                          
+##  [3] &quot;Duke Leto Atreides, head of House Atreides&quot;                                                                                                               
+##  [4] &quot;Lady Jessica, Bene Gesserit and concubine of the Duke, mother of Paul and Alia&quot;                                                                           
+##  [5] &quot;Alia Atreides, Paul's younger sister&quot;                                                                                                                     
+##  [6] &quot;Thufir Hawat, Mentat and Master of Assassins to House Atreides&quot;                                                                                           
+##  [7] &quot;Gurney Halleck, staunchly loyal troubadour warrior of the Atreides&quot;                                                                                       
+##  [8] &quot;Duncan Idaho, Swordmaster for House Atreides, graduate of the Ginaz School&quot;                                                                               
+##  [9] &quot;Wellington Yueh, Suk doctor for the Atreides, who is secretly working for House Harkonnen&quot;                                                                
+## [10] &quot;House Harkonnen&quot;                                                                                                                                          
+## [11] &quot;Baron Vladimir Harkonnen, head of House Harkonnen&quot;                                                                                                        
+## [12] &quot;Piter De Vries, twisted Mentat&quot;                                                                                                                           
+## [13] &quot;Feyd-Rautha, nephew and heir-presumptive of the Baron&quot;                                                                                                    
+## [14] &quot;Glossu \&quot;Beast\&quot; Rabban, also called Rabban Harkonnen, older nephew of the Baron&quot;                                                                         
+## [15] &quot;Iakin Nefud, Captain of the Guard&quot;                                                                                                                        
+## [16] &quot;House Corrino&quot;                                                                                                                                            
+## [17] &quot;Shaddam IV, Padishah Emperor of the Known Universe (the Imperium)&quot;                                                                                        
+## [18] &quot;Princess Irulan, Shaddam's eldest daughter and heir, also a historian&quot;                                                                                    
+## [19] &quot;Count Hasimir Fenring, genetic eunuch and the Emperor's closest friend, advisor, and \&quot;errand boy\&quot;&quot;                                                      
+## [20] &quot;Bene Gesserit&quot;                                                                                                                                            
+## [21] &quot;Reverend Mother Gaius Helen Mohiam, Bene Gesserit schemer, the Emperor's Truthsayer&quot;                                                                      
+## [22] &quot;Lady Margot Fenring, Bene Gesserit wife of Count Fenring&quot;                                                                                                 
+## [23] &quot;Fremen&quot;                                                                                                                                                   
+## [24] &quot;The Fremen, \&quot;native\&quot; inhabitants of Arrakis&quot;                                                                                                            
+## [25] &quot;Stilgar, Fremen Naib (chieftain) of Sietch Tabr&quot;                                                                                                          
+## [26] &quot;Chani, Paul's Fremen concubine&quot;                                                                                                                           
+## [27] &quot;Liet-Kynes, the Imperial Planetologist on Arrakis and father of Chani, as well as a revered figure among the Fremen&quot;                                      
+## [28] &quot;Mapes, head housekeeper of imperial residence on Arrakis&quot;                                                                                                 
+## [29] &quot;Jamis, Fremen killed by Paul in ritual duel&quot;                                                                                                              
+## [30] &quot;Harah, wife of Jamis and later servant to Paul&quot;                                                                                                           
+## [31] &quot;Ramallo, reverend mother of Sietch Tabr&quot;                                                                                                                  
+## [32] &quot;Esmar Tuek, a powerful smuggler and the father of Staban Tuek.&quot;                                                                                           
+## [33] &quot;Staban Tuek, the son of Esmar Tuek. A powerful smuggler who befriends and takes in Gurney Halleck and his surviving men after the attack on the Atreides.&quot;</code></pre>
+<pre class="r"><code>nom_perso &lt;- gsub(&quot;\\\&quot;|[.]&quot;,&quot;&quot;,nom_perso)
+nom_perso</code></pre>
+<pre><code>##  [1] &quot;House Atreides&quot;                                                                                                                                         
+##  [2] &quot;Paul Atreides, the Duke's son, and main character of the novel&quot;                                                                                         
+##  [3] &quot;Duke Leto Atreides, head of House Atreides&quot;                                                                                                             
+##  [4] &quot;Lady Jessica, Bene Gesserit and concubine of the Duke, mother of Paul and Alia&quot;                                                                         
+##  [5] &quot;Alia Atreides, Paul's younger sister&quot;                                                                                                                   
+##  [6] &quot;Thufir Hawat, Mentat and Master of Assassins to House Atreides&quot;                                                                                         
+##  [7] &quot;Gurney Halleck, staunchly loyal troubadour warrior of the Atreides&quot;                                                                                     
+##  [8] &quot;Duncan Idaho, Swordmaster for House Atreides, graduate of the Ginaz School&quot;                                                                             
+##  [9] &quot;Wellington Yueh, Suk doctor for the Atreides, who is secretly working for House Harkonnen&quot;                                                              
+## [10] &quot;House Harkonnen&quot;                                                                                                                                        
+## [11] &quot;Baron Vladimir Harkonnen, head of House Harkonnen&quot;                                                                                                      
+## [12] &quot;Piter De Vries, twisted Mentat&quot;                                                                                                                         
+## [13] &quot;Feyd-Rautha, nephew and heir-presumptive of the Baron&quot;                                                                                                  
+## [14] &quot;Glossu Beast Rabban, also called Rabban Harkonnen, older nephew of the Baron&quot;                                                                           
+## [15] &quot;Iakin Nefud, Captain of the Guard&quot;                                                                                                                      
+## [16] &quot;House Corrino&quot;                                                                                                                                          
+## [17] &quot;Shaddam IV, Padishah Emperor of the Known Universe (the Imperium)&quot;                                                                                      
+## [18] &quot;Princess Irulan, Shaddam's eldest daughter and heir, also a historian&quot;                                                                                  
+## [19] &quot;Count Hasimir Fenring, genetic eunuch and the Emperor's closest friend, advisor, and errand boy&quot;                                                        
+## [20] &quot;Bene Gesserit&quot;                                                                                                                                          
+## [21] &quot;Reverend Mother Gaius Helen Mohiam, Bene Gesserit schemer, the Emperor's Truthsayer&quot;                                                                    
+## [22] &quot;Lady Margot Fenring, Bene Gesserit wife of Count Fenring&quot;                                                                                               
+## [23] &quot;Fremen&quot;                                                                                                                                                 
+## [24] &quot;The Fremen, native inhabitants of Arrakis&quot;                                                                                                              
+## [25] &quot;Stilgar, Fremen Naib (chieftain) of Sietch Tabr&quot;                                                                                                        
+## [26] &quot;Chani, Paul's Fremen concubine&quot;                                                                                                                         
+## [27] &quot;Liet-Kynes, the Imperial Planetologist on Arrakis and father of Chani, as well as a revered figure among the Fremen&quot;                                    
+## [28] &quot;Mapes, head housekeeper of imperial residence on Arrakis&quot;                                                                                               
+## [29] &quot;Jamis, Fremen killed by Paul in ritual duel&quot;                                                                                                            
+## [30] &quot;Harah, wife of Jamis and later servant to Paul&quot;                                                                                                         
+## [31] &quot;Ramallo, reverend mother of Sietch Tabr&quot;                                                                                                                
+## [32] &quot;Esmar Tuek, a powerful smuggler and the father of Staban Tuek&quot;                                                                                          
+## [33] &quot;Staban Tuek, the son of Esmar Tuek A powerful smuggler who befriends and takes in Gurney Halleck and his surviving men after the attack on the Atreides&quot;</code></pre>
+</div>
+<div id="scraping-a-partir-de-wiki-liste-de-personnage" class="section level2">
+<h2>Scraping à partir de Wiki Liste de personnage</h2>
+<pre class="r"><code># group_data &lt;- html_nodes(page,&quot;#Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #House_Harkonnen , #House_Atreides&quot;) %&gt;% html_text()
+# message(&quot;Nom des groupes de personnages:&quot;)
+# group_data
+# 
+# nom_perso &lt;- html_nodes(page,'.mw-headline , #Miscellaneous , #Fremen , #Honored_Matres , #Spacing_Guild , #Bene_Tleilax , #Bene_Gesserit , #Imperial_House_Corrino , #House_Harkonnen ,#House_Atreides , li') %&gt;% html_text()
+# nom_perso &lt;- nom_perso[-c(1:which(nom_perso == &quot;Frank Herbert works&quot;),
+#                           which(nom_perso == &quot;Brian Herbert and Kevin J. Anderson works&quot;):length(nom_perso))]
+# 
+# nom_perso %&gt;% str_replace_all(c(&quot;[.]&quot; = &quot;&quot;, &quot;;&quot; = &quot;,&quot;))
+# 
+# message(&quot;Nom des personnages:&quot;)
+# 
+# nom_perso</code></pre>
+</div>
+<div id="regrouper-les-personnages-par-maison-ou-organisation" class="section level1">
+<h1>Regrouper les personnages par Maison ou organisation</h1>
 <pre class="r"><code>data_nom &lt;- tibble(group = 1:length(nom_perso), nom = nom_perso)
 data_nom$group &lt;- cumsum(as.integer(data_nom$nom %in% group_data))
 data_nom &lt;- data_nom[-which(data_nom$nom %in% group_data),]
@@ -405,41 +269,199 @@ data_nom &lt;- data_nom[-which(data_nom$nom %in% group_data),]
 
 data_nom$group &lt;- sapply(data_nom$group, function(x) {group_data[x]})
 data_nom</code></pre>
-<pre><code>## # A tibble: 93 x 2
+<pre><code>## # A tibble: 28 x 2
 ##    group         nom                                                      
 ##    &lt;chr&gt;         &lt;chr&gt;                                                    
-##  1 House Atreid… Arkie, Atreides House Trooper                            
-##  2 House Atreid… Alia Atreides, Paul's younger sister                     
-##  3 House Atreid… Ghanima Atreides, Paul's daughter and twin sister of Let…
-##  4 House Atreid… Ikonicre Atreides, majordomo to Leto II                  
-##  5 House Atreid… Lady Jessica, Bene Gesserit and concubine of the Duke; m…
-##  6 House Atreid… Duke Leto I Atreides, head of House Atreides             
-##  7 House Atreid… Leto, first son of Paul and Chani; died as a toddler     
-##  8 House Atreid… Leto II Atreides, Paul's son and twin brother of Ghanima 
-##  9 House Atreid… Moneo Atreides, majordomo and result of the God Emperor'…
-## 10 House Atreid… Paul Atreides, the Duke's son                            
-## # ... with 83 more rows</code></pre>
+##  1 House Atreid… Paul Atreides, the Duke's son, and main character of the…
+##  2 House Atreid… Duke Leto Atreides, head of House Atreides               
+##  3 House Atreid… Lady Jessica, Bene Gesserit and concubine of the Duke, m…
+##  4 House Atreid… Alia Atreides, Paul's younger sister                     
+##  5 House Atreid… Thufir Hawat, Mentat and Master of Assassins to House At…
+##  6 House Atreid… Gurney Halleck, staunchly loyal troubadour warrior of th…
+##  7 House Atreid… Duncan Idaho, Swordmaster for House Atreides, graduate o…
+##  8 House Atreid… Wellington Yueh, Suk doctor for the Atreides, who is sec…
+##  9 House Harkon… Baron Vladimir Harkonnen, head of House Harkonnen        
+## 10 House Harkon… Piter De Vries, twisted Mentat                           
+## # ... with 18 more rows</code></pre>
 </div>
 <div id="les-personnages-de-dune" class="section level1">
 <h1>Les personnages de Dune</h1>
 <pre class="r"><code>personnage &lt;- data_nom %&gt;%
   separate(nom, &quot;nom&quot;,&quot;,&quot;, extra = &quot;drop&quot; )
 
+personnage$nom &lt;- gsub(&quot;[[:punct:]]&quot;,&quot; &quot;,tolower(personnage$nom))
+personnage &lt;- as.data.frame(personnage, stringAsFactors = FALSE)
+personnage$id &lt;- 0:(nrow(personnage) - 1)
 personnage</code></pre>
-<pre><code>## # A tibble: 93 x 2
-##    group          nom                 
-##    &lt;chr&gt;          &lt;chr&gt;               
-##  1 House Atreides Arkie               
-##  2 House Atreides Alia Atreides       
-##  3 House Atreides Ghanima Atreides    
-##  4 House Atreides Ikonicre Atreides   
-##  5 House Atreides Lady Jessica        
-##  6 House Atreides Duke Leto I Atreides
-##  7 House Atreides Leto                
-##  8 House Atreides Leto II Atreides    
-##  9 House Atreides Moneo Atreides      
-## 10 House Atreides Paul Atreides       
-## # ... with 83 more rows</code></pre>
+<pre><code>##              group                                nom id
+## 1   House Atreides                      paul atreides  0
+## 2   House Atreides                 duke leto atreides  1
+## 3   House Atreides                       lady jessica  2
+## 4   House Atreides                      alia atreides  3
+## 5   House Atreides                       thufir hawat  4
+## 6   House Atreides                     gurney halleck  5
+## 7   House Atreides                       duncan idaho  6
+## 8   House Atreides                    wellington yueh  7
+## 9  House Harkonnen           baron vladimir harkonnen  8
+## 10 House Harkonnen                     piter de vries  9
+## 11 House Harkonnen                        feyd rautha 10
+## 12 House Harkonnen                glossu beast rabban 11
+## 13 House Harkonnen                        iakin nefud 12
+## 14   House Corrino                         shaddam iv 13
+## 15   House Corrino                    princess irulan 14
+## 16   House Corrino              count hasimir fenring 15
+## 17   Bene Gesserit reverend mother gaius helen mohiam 16
+## 18   Bene Gesserit                lady margot fenring 17
+## 19          Fremen                         the fremen 18
+## 20          Fremen                            stilgar 19
+## 21          Fremen                              chani 20
+## 22          Fremen                         liet kynes 21
+## 23          Fremen                              mapes 22
+## 24          Fremen                              jamis 23
+## 25          Fremen                              harah 24
+## 26          Fremen                            ramallo 25
+## 27          Fremen                         esmar tuek 26
+## 28          Fremen                        staban tuek 27</code></pre>
+</div>
+<div id="separer-les-noms-par-differents-noms-utilises-dans-le-livre" class="section level1">
+<h1>Séparer les noms par différents noms utilisés dans le livre</h1>
+<pre class="r"><code>dict_perso &lt;- cbind(select(personnage,-id), nom_dup = personnage$nom) %&gt;%
+  separate(nom_dup,c(&quot;nom1&quot;,&quot;nom2&quot;,&quot;nom3&quot;,&quot;nom4&quot;,&quot;nom5&quot;), &quot; &quot;,extra = &quot;drop&quot;)</code></pre>
+<pre><code>## Warning: Expected 5 pieces. Missing pieces filled with `NA` in 27 rows [1,
+## 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, ...].</code></pre>
+<pre class="r"><code>dict_perso</code></pre>
+<pre><code>##              group                                nom       nom1     nom2
+## 1   House Atreides                      paul atreides       paul atreides
+## 2   House Atreides                 duke leto atreides       duke     leto
+## 3   House Atreides                       lady jessica       lady  jessica
+## 4   House Atreides                      alia atreides       alia atreides
+## 5   House Atreides                       thufir hawat     thufir    hawat
+## 6   House Atreides                     gurney halleck     gurney  halleck
+## 7   House Atreides                       duncan idaho     duncan    idaho
+## 8   House Atreides                    wellington yueh wellington     yueh
+## 9  House Harkonnen           baron vladimir harkonnen      baron vladimir
+## 10 House Harkonnen                     piter de vries      piter       de
+## 11 House Harkonnen                        feyd rautha       feyd   rautha
+## 12 House Harkonnen                glossu beast rabban     glossu    beast
+## 13 House Harkonnen                        iakin nefud      iakin    nefud
+## 14   House Corrino                         shaddam iv    shaddam       iv
+## 15   House Corrino                    princess irulan   princess   irulan
+## 16   House Corrino              count hasimir fenring      count  hasimir
+## 17   Bene Gesserit reverend mother gaius helen mohiam   reverend   mother
+## 18   Bene Gesserit                lady margot fenring       lady   margot
+## 19          Fremen                         the fremen        the   fremen
+## 20          Fremen                            stilgar    stilgar     &lt;NA&gt;
+## 21          Fremen                              chani      chani     &lt;NA&gt;
+## 22          Fremen                         liet kynes       liet    kynes
+## 23          Fremen                              mapes      mapes     &lt;NA&gt;
+## 24          Fremen                              jamis      jamis     &lt;NA&gt;
+## 25          Fremen                              harah      harah     &lt;NA&gt;
+## 26          Fremen                            ramallo    ramallo     &lt;NA&gt;
+## 27          Fremen                         esmar tuek      esmar     tuek
+## 28          Fremen                        staban tuek     staban     tuek
+##         nom3  nom4   nom5
+## 1       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 2   atreides  &lt;NA&gt;   &lt;NA&gt;
+## 3       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 4       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 5       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 6       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 7       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 8       &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 9  harkonnen  &lt;NA&gt;   &lt;NA&gt;
+## 10     vries  &lt;NA&gt;   &lt;NA&gt;
+## 11      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 12    rabban  &lt;NA&gt;   &lt;NA&gt;
+## 13      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 14      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 15      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 16   fenring  &lt;NA&gt;   &lt;NA&gt;
+## 17     gaius helen mohiam
+## 18   fenring  &lt;NA&gt;   &lt;NA&gt;
+## 19      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 20      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 21      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 22      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 23      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 24      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 25      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 26      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 27      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 28      &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;</code></pre>
+</div>
+<div id="enlever-les-noms-qui-ne-conviennent-pas" class="section level1">
+<h1>enlever les noms qui ne conviennent pas</h1>
+<pre class="r"><code>dict_perso[dict_perso == &quot;atreides&quot; | 
+             dict_perso  == &quot;harkonnen&quot; |
+             dict_perso  == &quot;tuek&quot; |
+             dict_perso  == &quot;fenring&quot; |
+             dict_perso == &quot;the&quot; | 
+             dict_perso == &quot;de&quot; |
+             dict_perso == &quot;princess&quot;|
+             dict_perso == &quot;lady&quot; |
+             dict_perso == &quot;fremen&quot;]&lt;- NA
+
+dict_perso$nom1[which(dict_perso$nom2== &quot;margot&quot;)] &lt;- &quot;lady fenring&quot;
+
+dict_perso</code></pre>
+<pre><code>##              group                                nom         nom1
+## 1   House Atreides                      paul atreides         paul
+## 2   House Atreides                 duke leto atreides         duke
+## 3   House Atreides                       lady jessica         &lt;NA&gt;
+## 4   House Atreides                      alia atreides         alia
+## 5   House Atreides                       thufir hawat       thufir
+## 6   House Atreides                     gurney halleck       gurney
+## 7   House Atreides                       duncan idaho       duncan
+## 8   House Atreides                    wellington yueh   wellington
+## 9  House Harkonnen           baron vladimir harkonnen        baron
+## 10 House Harkonnen                     piter de vries        piter
+## 11 House Harkonnen                        feyd rautha         feyd
+## 12 House Harkonnen                glossu beast rabban       glossu
+## 13 House Harkonnen                        iakin nefud        iakin
+## 14   House Corrino                         shaddam iv      shaddam
+## 15   House Corrino                    princess irulan         &lt;NA&gt;
+## 16   House Corrino              count hasimir fenring        count
+## 17   Bene Gesserit reverend mother gaius helen mohiam     reverend
+## 18   Bene Gesserit                lady margot fenring lady fenring
+## 19          Fremen                         the fremen         &lt;NA&gt;
+## 20          Fremen                            stilgar      stilgar
+## 21          Fremen                              chani        chani
+## 22          Fremen                         liet kynes         liet
+## 23          Fremen                              mapes        mapes
+## 24          Fremen                              jamis        jamis
+## 25          Fremen                              harah        harah
+## 26          Fremen                            ramallo      ramallo
+## 27          Fremen                         esmar tuek        esmar
+## 28          Fremen                        staban tuek       staban
+##        nom2   nom3  nom4   nom5
+## 1      &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 2      leto   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 3   jessica   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 4      &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 5     hawat   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 6   halleck   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 7     idaho   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 8      yueh   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 9  vladimir   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 10     &lt;NA&gt;  vries  &lt;NA&gt;   &lt;NA&gt;
+## 11   rautha   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 12    beast rabban  &lt;NA&gt;   &lt;NA&gt;
+## 13    nefud   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 14       iv   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 15   irulan   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 16  hasimir   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 17   mother  gaius helen mohiam
+## 18   margot   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 19     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 20     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 21     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 22    kynes   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 23     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 24     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 25     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 26     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 27     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;
+## 28     &lt;NA&gt;   &lt;NA&gt;  &lt;NA&gt;   &lt;NA&gt;</code></pre>
 </div>
 
 
