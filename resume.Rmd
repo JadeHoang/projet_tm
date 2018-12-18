@@ -50,15 +50,27 @@ idf<-log2(ncol(tdm)/(rowSums(tdm >0)+1))
 #         data: 
 compute_similarity<-function(data,tf,idf,num.chapitre){
   sim<-rep(0,length(data))
+  Docum<-0
+  for (i in 1:length(data)) {
+    sent<-data[i]
+    sent<-str_split(sent,'\\s+')
+    sent<-as.vector(sent[[1]])
+    sent<-sent[which(sent!="")]
+    Docum<-Docum+length(sent)
+  }
+  
+  avgDocum<- Docum/length(data)
+  
   for (i in 1:length(data)) {
     sent<-data[i]
     sent<-str_split(sent,'\\s+')
     sent<-as.vector(sent[[1]])
     sent<-sent[which(sent!="")]
     k<-1.2
+    b<-0.75
     for (w in sent) {
       #BM25 k=1.2
-      if(str_count(w)>2) sim[i]<-sim[i]+idf[w]*((k + 1) * tf[w,num.chapitre]) / (k + tf[w,num.chapitre]) * 1/sqrt(length(sent))
+      if(str_count(w)>2) sim[i]<-sim[i]+idf[w]*((k + 1) * tf[w,num.chapitre]) / (k *(1.0-b+b*(length(sent)/avgDocum)) + tf[w,num.chapitre])
     }
   }
   return(sim)
@@ -156,6 +168,7 @@ create_graph<-function(sentences){
   for (i in 1:num) {
     for (j in 1:num) {
         if(i!=j) board[i,j]<-calculate_similarity(sentences[i],sentences[j])
+        else board[i,j]<-1
     }
   }
   #traitement normalisé
