@@ -196,6 +196,8 @@ row.names(pers_chap) <- NULL
 head(pers_chap)
 ```
 
+
+
 Personnage par chapitre
 ```{r}
 pers_chap_matrix <- t(DTM)
@@ -209,7 +211,7 @@ norm <- pers_chap_matrix/ rowSums(pers_chap_matrix)
 
 h <- hclust(dist(norm, method = "manhattan"))
 
-plot(h)
+plot(h, xlab = "Personnages", ylab="")
 ```
 
 ```{r}
@@ -369,7 +371,7 @@ poids.perso.group[[1]]
 
 Exemple pour Chapitre 1
 ```{r}
-forceNetwork(Links = poids.perso.group[[1]],
+forceNetwork(Links = poids.perso.group[[24]],
                  Nodes = personnage, 
                  Source = "Source",
                  Target = "Target",
@@ -382,5 +384,29 @@ forceNetwork(Links = poids.perso.group[[1]],
                  zoom = TRUE,
                  fontSize = 8,
                  legend = TRUE)
+```
+
+
+```{r}
+#par(mfrow=c(2,4))
+for (i in 1:4) {
+forceNetwork(Links = poids.perso.group[[i]],
+                 Nodes = personnage, 
+                 Source = "Source",
+                 Target = "Target",
+                 NodeID ="nom",
+                 Group = "group",
+                 Value = "poids",
+                 opacity = 1,
+                 opacityNoHover = 2,
+                 linkWidth = networkD3::JS("function(d) { return d.value*2; }"),
+                 zoom = TRUE,
+                 fontSize = 8,
+                 legend = TRUE)
+
+  
+}
+#par(mfrow=c(1,1))
+  
 ```
 

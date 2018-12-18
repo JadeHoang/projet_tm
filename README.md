@@ -1,5 +1,53 @@
 # Projet Text Mining
 
+## Pré-requis
+
+### wiki_scraping.Rmd
+
+- tidyverse
+- rvest
+- stringr
+- rebus
+- lubridate
+
+### network.Rmd
+
+- tidytext
+- tidyverse
+- igraph
+- reshape2
+- wordcloud
+- ggraph
+- widyr
+- networkD3
+- quanteda
+- igraph
+
+### sentiments.Rmd
+
+- dplyr
+- ggplot2
+- tidytext
+
+### resums.Rmd
+
+- Git LFS pour importer gros jeu de données
+
+- Données Glove disponibles ici : https://nlp.stanford.edu/data/glove.6B.zip
+
+- dplyr
+- tidytext
+- wordcloud
+- reshape2
+- stringr
+- ggplot2
+- igraph
+- ggraph
+- widyr
+- textrank
+
+## Scripts
+
 Exécuter les fichiers en ordre:
 1. wiki_scraping.Rmd
 2. network.Rmd
