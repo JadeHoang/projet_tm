@@ -184,7 +184,7 @@ create_graph<-function(sentences){
 different<-function(scores,old_scores){
   flag<-FALSE
   for(i in 1:length(scores)){
-    if(abs(scores[i]-old_scores[i])>0.001){
+    if(abs(scores[i]-old_scores[i])>0.0001){
       flag<-TRUE
       break
     }
